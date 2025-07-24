@@ -16,38 +16,39 @@ members = [
 
   "happ_builder",
 
-  "scenarios/app_install",
-  "scenarios/dht_sync_lag",
-  "scenarios/single_write_many_read",
-  "scenarios/zome_call_single_value",
-  "scenarios/first_call",
-  "scenarios/write_read",
-  "scenarios/write_query",
-  "scenarios/local_signals",
-  "scenarios/remote_call_rate",
-  "scenarios/remote_signals",
-  "scenarios/two_party_countersigning",
-  "scenarios/write_validated",
-  "scenarios/validation_receipts",
-  "scenarios/kitsune_continuous_flow",
+  # "scenarios/app_install",
+  # "scenarios/dht_sync_lag",
+  # "scenarios/single_write_many_read",
+  # "scenarios/zome_call_single_value",
+  # "scenarios/first_call",
+  # "scenarios/write_read",
+  # "scenarios/write_query",
+  # "scenarios/local_signals",
+  # "scenarios/remote_call_rate",
+  # "scenarios/remote_signals",
+  # "scenarios/two_party_countersigning",
+  # "scenarios/write_validated",
+  # "scenarios/validation_receipts",
+  # "scenarios/kitsune_continuous_flow",
+  "scenarios/domino",
 
-  "zomes/return_single_value/coordinator",
-  "zomes/crud/coordinator",
-  "zomes/crud/integrity",
-  "zomes/timed/coordinator",
-  "zomes/timed/integrity",
-  "zomes/callback/coordinator",
-  "zomes/callback/integrity",
-  "zomes/large/coordinator",
-  "zomes/signal/coordinator",
-  "zomes/remote_call/coordinator",
-  "zomes/remote_call/integrity",
-  "zomes/remote_signal/coordinator",
-  "zomes/remote_signal/integrity",
-  "zomes/countersigning/coordinator",
-  "zomes/countersigning/integrity",
-  "zomes/validated/coordinator",
-  "zomes/validated/integrity",
+  # "zomes/return_single_value/coordinator",
+  # "zomes/crud/coordinator",
+  # "zomes/crud/integrity",
+  # "zomes/timed/coordinator",
+  # "zomes/timed/integrity",
+  # "zomes/callback/coordinator",
+  # "zomes/callback/integrity",
+  # "zomes/large/coordinator",
+  # "zomes/signal/coordinator",
+  # "zomes/remote_call/coordinator",
+  # "zomes/remote_call/integrity",
+  # "zomes/remote_signal/coordinator",
+  # "zomes/remote_signal/integrity",
+  # "zomes/countersigning/coordinator",
+  # "zomes/countersigning/integrity",
+  # "zomes/validated/coordinator",
+  # "zomes/validated/integrity",
 ]
 
 # By default, don't build the scenarios or zomes.
@@ -119,20 +120,22 @@ tempfile = "3.13"
 futures = "0.3"
 thiserror = "2"
 pretty_assertions = "1.4"
+rmp-serde = "1.3.0"
 
 # Deps for Holochain
 holochain_client = { version = "0.7.0" }
 holochain_zome_types = { version = "0.5.2" }
 holo_hash = { version = "0.5.2" }
-holochain_types = { version = "0.5.2" }
-holochain_conductor_api = { version = "0.5.2" }
+holochain_types = { version = "0.5.4" }
+holochain_conductor_api = { version = "0.5.4" }
 holochain_serialized_bytes = "0.0.56"
-holochain_websocket = { version = "0.5.2" }
-hdk = { version = "0.5.2", features = [
+holochain_websocket = { version = "0.5.4" }
+hdk = { version = "0.5.4", features = [
   "unstable-functions",
   "unstable-countersigning",
 ] }
-hdi = { version = "0.6.2", features = ["unstable-functions"] }
+hdi = { version = "0.6.4", features = ["unstable-functions"] }
+mr_bundle = { version = "0.5.4" }
 
 # Deps for Kitsune
 kitsune2 = "0.1.8"
