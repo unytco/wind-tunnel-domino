@@ -123,47 +123,8 @@ pub async fn build_happ(
     );
     Ok(source)
 }
-/// Opinionated app installation which will give you what you need in most cases.
-///
-/// The [RoleName] you provide is used to find the cell id within the installed app that you want
-/// to call during your scenario.
-///
-/// Requires:
-/// - The [HolochainRunnerContext] to have a valid `app_ws_url`. Consider calling [configure_app_ws_url] in your setup before using this function.
-///
-/// Call this function as follows:
-/// ```rust
-/// use std::path::Path;
-/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, install_app, AgentContext, HookResult};
-///
-/// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
-///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
-///     Ok(())
-/// }
-/// ```
-///
-/// After calling this function you will be able to use the `installed_app_id`, `cell_id` and `app_agent_client` in your agent hooks:
-/// ```rust
-/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
-///
-/// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
-///     let installed_app_id = ctx.get().installed_app_id()?;
-///     let cell_id = ctx.get().cell_id();
-///     let app_agent_client = ctx.get().app_client();
-///
-///     Ok(())
-/// }
-/// ```
-///
-/// Method:
-/// - Connects to an admin port using the connection string from the runner context.
-/// - Generates an agent public key.
-/// - Installs the app using the provided `app_path` and the agent public key.
-/// - Enables the app.
-/// - Authorizes signing credentials.
-/// - Connects to the app websocket.
-/// - Sets the `installed_app_id`, `cell_id` and `app_agent_client` values in [HolochainAgentContext].
-pub fn install_app<SV>(
+
+pub fn custom_install_app<SV>(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
     app_path: PathBuf,
     role_name: &RoleName,
@@ -264,6 +225,129 @@ where
     Ok(())
 }
 
+/// Opinionated app installation which will give you what you need in most cases.
+///
+/// The [RoleName] you provide is used to find the cell id within the installed app that you want
+/// to call during your scenario.
+///
+/// Requires:
+/// - The [HolochainRunnerContext] to have a valid `app_ws_url`. Consider calling [configure_app_ws_url] in your setup before using this function.
+///
+/// Call this function as follows:
+/// ```rust
+/// use std::path::Path;
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, install_app, AgentContext, HookResult};
+///
+/// fn agent_setup(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     install_app(ctx, Path::new("path/to/your/happ").to_path_buf(), &"your_role_name".to_string())?;
+///     Ok(())
+/// }
+/// ```
+///
+/// After calling this function you will be able to use the `installed_app_id`, `cell_id` and `app_agent_client` in your agent hooks:
+/// ```rust
+/// use holochain_wind_tunnel_runner::prelude::{HolochainAgentContext, HolochainRunnerContext, AgentContext, HookResult};
+///
+/// fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext>) -> HookResult {
+///     let installed_app_id = ctx.get().installed_app_id()?;
+///     let cell_id = ctx.get().cell_id();
+///     let app_agent_client = ctx.get().app_client();
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// Method:
+/// - Connects to an admin port using the connection string from the runner context.
+/// - Generates an agent public key.
+/// - Installs the app using the provided `app_path` and the agent public key.
+/// - Enables the app.
+/// - Authorizes signing credentials.
+/// - Connects to the app websocket.
+/// - Sets the `installed_app_id`, `cell_id` and `app_agent_client` values in [HolochainAgentContext].
+pub fn install_app<SV>(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<SV>>,
+    app_path: PathBuf,
+    role_name: &RoleName,
+) -> WindTunnelResult<()>
+where
+    SV: UserValuesConstraint,
+{
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let app_ws_url = ctx.runner_context().get().app_ws_url();
+    let installed_app_id = installed_app_id_for_agent(ctx);
+    let reporter = ctx.runner_context().reporter();
+    let run_id = ctx.runner_context().get_run_id().to_string();
+
+    let (installed_app_id, cell_id, app_client) = ctx
+        .runner_context()
+        .executor()
+        .execute_in_place(async move {
+            log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
+            let client = AdminWebsocket::connect(admin_ws_url, reporter.clone()).await?;
+
+            let key = client
+                .generate_agent_pub_key()
+                .await
+                .map_err(handle_api_err)?;
+            log::debug!("Generated agent pub key: {:}", key);
+
+            let content = std::fs::read(app_path)?;
+
+            let app_info = client
+                .install_app(InstallAppPayload {
+                    source: AppBundleSource::Bytes(content),
+                    agent_key: Some(key),
+                    installed_app_id: Some(installed_app_id.clone()),
+                    roles_settings: None,
+                    network_seed: Some(run_id),
+                    ignore_genesis_failure: false,
+                    allow_throwaway_random_agent_key: false,
+                })
+                .await
+                .map_err(handle_api_err)?;
+            log::debug!("Installed app: {:}", installed_app_id);
+
+            client
+                .enable_app(installed_app_id.clone())
+                .await
+                .map_err(handle_api_err)?;
+            log::debug!("Enabled app: {:}", installed_app_id);
+
+            let cell_id = get_cell_id_for_role_name(&app_info, role_name)?;
+            log::debug!("Got cell id: {:}", cell_id);
+
+            let credentials = client
+                .authorize_signing_credentials(AuthorizeSigningCredentialsPayload {
+                    cell_id: cell_id.clone(),
+                    functions: None,
+                })
+                .await?;
+            log::debug!("Authorized signing credentials");
+
+            let signer = ClientAgentSigner::default();
+            signer.add_credentials(cell_id.clone(), credentials);
+
+            let issued = client
+                .issue_app_auth_token(installed_app_id.clone().into())
+                .await
+                .map_err(|e| {
+                    anyhow::anyhow!("Could not issue auth token for app client: {:?}", e)
+                })?;
+
+            let app_client =
+                AppWebsocket::connect(app_ws_url, issued.token, signer.into(), reporter).await?;
+
+            Ok((installed_app_id, cell_id, app_client))
+        })
+        .context("Failed to install app")?;
+
+    ctx.get_mut().installed_app_id = Some(installed_app_id);
+    ctx.get_mut().cell_id = Some(cell_id);
+    ctx.get_mut().app_client = Some(app_client);
+
+    Ok(())
+}
 /// Used an installed app as though it had been installed by [install_app].
 ///
 /// It doesn't matter whether the app was installed by [install_app], but if it wasn't then it is

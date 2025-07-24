@@ -21,7 +21,7 @@ pub fn agent_setup(
     let assigned_behaviour = ctx.assigned_behaviour().to_string();
     if assigned_behaviour == "initiate" {
         log::info!("Installing app for initiator agent pubkey (Progenitor)");
-        install_app(
+        custom_install_app(
             ctx,
             scenario_happ_path!("domino"),
             &"alliance".to_string(),
@@ -30,7 +30,7 @@ pub fn agent_setup(
         )?;
     } else {
         log::info!("Installing app for participant agent pubkey");
-        install_app(
+        custom_install_app(
             ctx,
             scenario_happ_path!("domino"),
             &"alliance".to_string(),
