@@ -1,6 +1,7 @@
 mod common;
 
 mod context;
+mod custom;
 mod macros;
 mod runner_context;
 
@@ -9,6 +10,7 @@ pub mod prelude {
     ///
     /// This is a good place to start if you are getting started writing scenarios.
     pub use crate::common::*;
+    pub use crate::custom::*;
 
     pub use crate::context::HolochainAgentContext;
     pub use crate::runner_context::HolochainRunnerContext;
