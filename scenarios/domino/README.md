@@ -2,17 +2,39 @@
 
 ### Description
 
-This scenario tests the performance of a `domino` chain transaction.
+This scenario tests the performance of a domino chain transaction system using a distributed credit ledger. The scenario simulates a financial network where agents can spend credits and create transaction chains that propagate through the network like dominoes.
 
-There are two roles, `initiate` and `spend`.
+There are two roles:
 
-The `initiate` agent is responsible for initializing the network. This involves creating system code templates and setting a global configuration. This agent is also known as the "progenitor".
+#### `initiate` (Progenitor Agent)
 
-The `spend` agents wait for the network to be initialized and then record a custom metric:
+The `initiate` agent is responsible for initializing the network. This involves:
 
-- `wt.custom.global_definition_propagation_time`: records the time at which the global definition is readable by for each agent.
-  - This helps us know when each agent can start transacting
-- `wt.custom.`
+- Creating system code templates for credit limit computation and transaction fee collection
+- Setting up global configuration with effective dates, credit limits, and fee structures
+- Establishing the foundational smart agreements that govern the network
+- Staying idle once the network is properly initialized
+
+#### `spend` (Transaction Agents)
+
+The `spend` agents wait for the network to be initialized and then actively participate in the transaction system by:
+
+- Waiting for and detecting network initialization
+- Accepting incoming transactions from other agents
+- Calculating spendable amounts based on current balance, fees, and applied credit limits
+- Identifying other participating agents in the network
+- Creating spend transactions distributed among available agents
+- Continuously cycling through this process to create transaction chains
+
+### Metrics Collected
+
+The scenario records several custom metrics:
+
+- `wt.custom.global_definition_propagation_time`: Records the time at which the global definition becomes readable for each agent, helping measure network initialization propagation speed
+- `wt.custom.final:ledger_state`: Captures the final state of the ledger at scenario teardown for analysis
+- `wt.custom.final:actionable_transactions`: Records the count of actionable invoices and spends at scenario teardown
+
+Additionally, all zome calls are automatically logged with timing and performance metrics by the Wind Tunnel framework.
 
 ### Suggested command
 
