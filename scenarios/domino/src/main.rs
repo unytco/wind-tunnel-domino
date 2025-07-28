@@ -35,7 +35,7 @@ fn main() -> WindTunnelResult<()> {
         let parked_spend = ctx.domino_get_parked_spend()?;
         let executed_agreements = ctx.domino_get_all_my_executed_saveds()?;
         reporter.add_custom(
-            ReportMetric::new("final:actionable_transactions")
+            ReportMetric::new("final:history")
                 .with_field(
                     "actionable_transactions:invoices",
                     format!("{:?}", actuable_tx.invoice_actionable.len()),

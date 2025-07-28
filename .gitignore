@@ -18,6 +18,7 @@ wasm-target/
 
 dnas/**/*.dna
 dnas/**/*.yaml
+!happs/domino/domino.happ
 happs/**/*.happ
 happs/**/*.yaml
 
