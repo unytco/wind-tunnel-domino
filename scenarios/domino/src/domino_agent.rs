@@ -5,10 +5,11 @@ use holochain_wind_tunnel_runner::prelude::{self as wind_tunnel_prelude, *};
 use rave_engine::types::{
     entries::{
         code_template::CodeTemplate, AgreementDefInput, CodeTemplateExt, ExecutionEngine,
-        GlobalDefinition, GlobalDefinitionExt, SmartAgreement, SmartAgreementExt,
+        GlobalDefinition, GlobalDefinitionExt, SmartAgreement, SmartAgreementExt, SAVED,
     },
     Actionable, Completed, Ledger, Transaction, Units,
 };
+use serde_json::Value;
 use zfuel::fuel::ZFuel;
 
 // todo: move to rave_engine
@@ -25,9 +26,34 @@ pub struct AcceptTx {
     pub address: ActionHash,
     pub service_network_definition: Option<ActionHash>,
 }
+#[derive(Serialize, Deserialize, Debug, Clone, SerializedBytes)]
+pub struct CreateParkedSpendInput {
+    pub ea_id: ActionHash,
+    pub executor: AgentPubKey,
+    pub amount: Units,
+    pub spender_payload: Value,
+    pub service_network_definition: Option<ActionHash>,
+}
+#[derive(Serialize, Deserialize, Debug, Clone, SerializedBytes)]
+pub struct SAVEDExecuteInputs {
+    pub executor_inputs: Value,
+    pub ea_id: ActionHash,
+    // if empty, we assume that the executor will provide the links
+    #[serde(default)]
+    pub links: Vec<Transaction>,
+    #[serde(default)]
+    pub definition: Option<ActionHash>,
+}
+#[derive(Serialize, Deserialize, Debug, Clone, SerializedBytes)]
+pub struct ExecutionRequests {
+    pub ea_id: ActionHashB64,
+    pub links: Vec<Transaction>,
+}
+
 pub trait DominoAgentExt {
     fn domino_init(&mut self) -> HookResult;
     fn is_network_initialized(&mut self) -> bool;
+    fn collect_agents(&mut self) -> Result<(), anyhow::Error>;
     fn domino_create_flag_template(&mut self) -> Result<ActionHashB64, anyhow::Error>;
     fn domino_get_current_global_definition(
         &mut self,
@@ -58,6 +84,21 @@ pub trait DominoAgentExt {
     fn domino_get_ledger(&mut self) -> Result<Ledger, anyhow::Error>;
     fn domino_get_my_current_applied_credit_limit(&mut self) -> Result<ZFuel, anyhow::Error>;
     fn domino_get_completed_transactions(&mut self) -> Result<Completed, anyhow::Error>;
+    fn domino_get_incoming_saveds(&mut self) -> Result<Vec<Transaction>, anyhow::Error>;
+    fn domino_collect_from_saved(&mut self, tx: Transaction) -> Result<Transaction, anyhow::Error>;
+    fn domino_create_parked_spend(
+        &mut self,
+        park: CreateParkedSpendInput,
+    ) -> Result<(), anyhow::Error>;
+    fn domino_execute_saved(
+        &mut self,
+        inputs: SAVEDExecuteInputs,
+    ) -> Result<(SAVED, ActionHash), anyhow::Error>;
+    fn domino_get_requests_to_execute_agreements(
+        &mut self,
+    ) -> Result<Vec<ExecutionRequests>, anyhow::Error>;
+    fn domino_get_parked_spend(&mut self) -> Result<Vec<Transaction>, anyhow::Error>;
+    fn domino_get_all_my_executed_saveds(&mut self) -> Result<Vec<Transaction>, anyhow::Error>;
 }
 
 impl DominoAgentExt
@@ -100,6 +141,31 @@ impl DominoAgentExt
             return false;
         }
     }
+    fn collect_agents(&mut self) -> Result<(), anyhow::Error> {
+        const MAX_NUMBER_OF_AGENTS_NEEDED: usize = 10;
+        if self.get().scenario_values.participating_agents.len() < MAX_NUMBER_OF_AGENTS_NEEDED {
+            let code_templates = self.domino_get_code_templates_lib()?;
+            // collecte unity authors of the code templates
+            let mut unique_agents = code_templates
+                .iter()
+                .map(|template| template.author.clone())
+                .collect::<Vec<_>>();
+
+            // remove yourself from the list
+            unique_agents
+                .retain(|agent| agent != &self.get().cell_id().agent_pubkey().clone().into());
+            // remove progenitor from the list
+            unique_agents.retain(|agent| {
+                agent != &self.runner_context().get().progenitor_agent_pubkey().into()
+            });
+            self.get_mut().scenario_values.participating_agents = unique_agents
+                .into_iter()
+                .map(|agent| agent.into())
+                .collect();
+        }
+        Ok(())
+    }
+
     fn domino_create_flag_template(&mut self) -> Result<ActionHashB64, anyhow::Error> {
         let code_template = CodeTemplate {
             version: semver::Version::new(0, 1, 0),
@@ -189,6 +255,42 @@ impl DominoAgentExt
 
     fn domino_get_completed_transactions(&mut self) -> Result<Completed, anyhow::Error> {
         self.call_zome_alliance("get_completed_transactions", ())
+    }
+
+    fn domino_get_incoming_saveds(&mut self) -> Result<Vec<Transaction>, anyhow::Error> {
+        self.call_zome_alliance("get_incoming_saveds", ())
+    }
+
+    fn domino_collect_from_saved(&mut self, tx: Transaction) -> Result<Transaction, anyhow::Error> {
+        self.call_zome_alliance("collect_from_saved", tx)
+    }
+
+    fn domino_create_parked_spend(
+        &mut self,
+        park: CreateParkedSpendInput,
+    ) -> Result<(), anyhow::Error> {
+        self.call_zome_alliance("create_parked_spend", park)
+    }
+
+    fn domino_execute_saved(
+        &mut self,
+        inputs: SAVEDExecuteInputs,
+    ) -> Result<(SAVED, ActionHash), anyhow::Error> {
+        self.call_zome_alliance("execute_saved", inputs)
+    }
+
+    fn domino_get_requests_to_execute_agreements(
+        &mut self,
+    ) -> Result<Vec<ExecutionRequests>, anyhow::Error> {
+        self.call_zome_alliance("get_requests_to_execute_agreements", ())
+    }
+
+    fn domino_get_parked_spend(&mut self) -> Result<Vec<Transaction>, anyhow::Error> {
+        self.call_zome_alliance("get_parked_spend", ())
+    }
+
+    fn domino_get_all_my_executed_saveds(&mut self) -> Result<Vec<Transaction>, anyhow::Error> {
+        self.call_zome_alliance("get_all_my_executed_saveds", ())
     }
 }
 

@@ -59,27 +59,7 @@ pub fn agent_behaviour(
     // test 4
     // collect agents and start transacting
     if spendable_amount > ZFuel::from_str("0")? {
-        const MAX_NUMBER_OF_AGENTS_NEEDED: usize = 10;
-        if ctx.get().scenario_values.participating_agents.len() < MAX_NUMBER_OF_AGENTS_NEEDED {
-            let code_templates = ctx.domino_get_code_templates_lib()?;
-            // collecte unity authors of the code templates
-            let mut unique_agents = code_templates
-                .iter()
-                .map(|template| template.author.clone())
-                .collect::<Vec<_>>();
-
-            // remove yourself from the list
-            unique_agents
-                .retain(|agent| agent != &ctx.get().cell_id().agent_pubkey().clone().into());
-            // remove progenitor from the list
-            unique_agents.retain(|agent| {
-                agent != &ctx.runner_context().get().progenitor_agent_pubkey().into()
-            });
-            ctx.get_mut().scenario_values.participating_agents = unique_agents
-                .into_iter()
-                .map(|agent| agent.into())
-                .collect();
-        }
+        ctx.collect_agents()?;
 
         // spend with those agents
         let participating_agents = ctx.get().scenario_values.participating_agents.clone();
