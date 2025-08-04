@@ -34,3 +34,14 @@ build:
 	cd domino && yarn build:happ
 	mkdir -p happs/domino
 	cp domino/workdir/domino.happ happs/domino/domino.happ
+
+deploy:
+	@if [ ! -f nomad/token ]; then echo "Error: nomad/token file not found"; exit 1; fi
+	nomad job run -address=https://nomad-server-01.holochain.org:4646 \
+		-token=$$(cat nomad/token) \
+		-ca-cert=./nomad/server-ca-cert.pem \
+		./nomad/jobs/domino-spend.nomad.hcl
+
+prep:
+	# ./nomad/generate_jobs.sh domino-smart-agreements
+	./nomad/generate_jobs.sh domino-spend

@@ -1,0 +1,11 @@
+{
+    "run_id": "domino-smart-agreements",
+    "scenario_name": "domino",
+    "agents_per_node": 1,
+    "behaviours": [
+      "smart_agreements"
+    ],
+    "single_agent_behaviour": "initiate",
+    "single_agent_count": 1,
+    "duration": 600
+}
