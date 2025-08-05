@@ -1,7 +1,7 @@
 {
-    "run_id": "domino-smart-agreements",
+    "run_id": "domino_smart_agreements",
     "scenario_name": "domino",
-    "agents_per_node": 1,
+    "agents_per_node": 5,
     "behaviours": [
       "smart_agreements"
     ],

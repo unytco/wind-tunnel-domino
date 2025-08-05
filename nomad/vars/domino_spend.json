@@ -1,0 +1,11 @@
+{
+    "run_id": "domino_spend",
+    "scenario_name": "domino",
+    "agents_per_node": 5,
+    "behaviours": [
+        "spend"
+    ],
+    "custom_agent_behaviours": "initiate",
+    "custom_agent_count": 1,
+    "duration": 600
+}
