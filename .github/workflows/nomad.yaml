@@ -17,8 +17,6 @@ jobs:
       # `job-name` defaults to `scenario-name` if not provided.
       # `required-nodes` defaults to `1` if not provided.
       matrix:
-        scenario-name:
-          - domino
         include:
           - job-name: domino_spend
             scenario-name: domino
