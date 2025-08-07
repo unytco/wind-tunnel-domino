@@ -6,6 +6,7 @@ use wind_tunnel_runner::prelude::UserValuesConstraint;
 pub struct HolochainRunnerContext {
     pub(crate) app_ws_url: Option<String>,
     pub progenitor_agent_pubkey: Option<AgentPubKey>,
+    pub progenitor_initialized: bool,
 }
 
 impl UserValuesConstraint for HolochainRunnerContext {}
@@ -22,5 +23,13 @@ impl HolochainRunnerContext {
         self.progenitor_agent_pubkey
             .clone()
             .expect("progenitor_agent_pubkey is not set, did you forget to call `configure_progenitor_agent_pubkey` in your setup?")
+    }
+
+    pub fn progenitor_initialized(&self) -> bool {
+        self.progenitor_initialized
+    }
+
+    pub fn set_progenitor_initialized(&mut self) {
+        self.progenitor_initialized = true;
     }
 }

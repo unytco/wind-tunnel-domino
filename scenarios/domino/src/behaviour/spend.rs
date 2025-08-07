@@ -7,6 +7,25 @@ use rave_engine::types::Units;
 use std::{collections::BTreeMap, str::FromStr, thread, time::Duration};
 use zfuel::{fraction::Fraction, fuel::ZFuel};
 
+// pub fn agent_behaviour(
+//     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+// ) -> HookResult {
+//     if ctx.get().cell_id().agent_pubkey() == &ctx.runner_context().get().progenitor_agent_pubkey() {
+//         // check if agent is progenitor
+//         log::info!(
+//             "Progenitor agent {} initializing network",
+//             ctx.get().cell_id().agent_pubkey()
+//         );
+//         return crate::behaviour::initiate_network::agent_behaviour(ctx);
+//     } else {
+//         // else continue with spend behaviour
+//         log::info!(
+//             "Agent {} continuing with spend behaviour",
+//             ctx.get().cell_id().agent_pubkey()
+//         );
+//         agent_behaviour_spend(ctx)
+//     }
+// }
 pub fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {

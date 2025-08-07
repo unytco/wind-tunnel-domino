@@ -2,7 +2,7 @@ use super::handle_scenario_setup::ScenarioValues;
 use crate::domino_agent::DominoAgentExt;
 use holochain_types::prelude::YamlProperties;
 use holochain_wind_tunnel_runner::prelude::*;
-use holochain_wind_tunnel_runner::scenario_happ_path;
+use holochain_wind_tunnel_runner::scenario_happ_bytes;
 use std::collections::HashMap;
 use std::time::Duration;
 use tokio::time::Instant;
@@ -19,20 +19,21 @@ pub fn agent_setup(
     let dna_properties = HashMap::from([("alliance".to_string(), YamlProperties::new(prop))]);
 
     let assigned_behaviour = ctx.assigned_behaviour().to_string();
+    // if ctx.agent_name().contains("agent-0") {
     if assigned_behaviour == "initiate" {
         log::info!("Installing app for initiator agent pubkey (Progenitor)");
-        custom_install_app(
+        custom_install_app_from_bytes(
             ctx,
-            scenario_happ_path!("domino"),
+            scenario_happ_bytes!("domino"),
             &"alliance".to_string(),
             Some(progenitor_agent_pubkey),
             Some(dna_properties),
         )?;
     } else {
         log::info!("Installing app for participant agent pubkey");
-        custom_install_app(
+        custom_install_app_from_bytes(
             ctx,
-            scenario_happ_path!("domino"),
+            scenario_happ_bytes!("domino"),
             &"alliance".to_string(),
             None,
             Some(dna_properties),
@@ -42,10 +43,11 @@ pub fn agent_setup(
 
     ctx.domino_init()?;
 
-    log::debug!(
-        "Agent setup complete for {}, with agent pub key {:?}",
+    log::info!(
+        "Agent setup complete for {}, with agent pub key {:?}, dna hash {:?}",
         ctx.agent_name(),
-        ctx.get().cell_id().agent_pubkey()
+        ctx.get().cell_id().agent_pubkey(),
+        ctx.get().cell_id().dna_hash()
     );
 
     // Every agent creates a code template to flag that they have joined the network
