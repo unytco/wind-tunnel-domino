@@ -18,8 +18,9 @@ pub fn agent_setup(
 
     let dna_properties = HashMap::from([("alliance".to_string(), YamlProperties::new(prop))]);
 
-    // let assigned_behaviour = ctx.assigned_behaviour().to_string();
-    if ctx.agent_name().contains("agent-0") {
+    let assigned_behaviour = ctx.assigned_behaviour().to_string();
+    // if ctx.agent_name().contains("agent-0") {
+    if assigned_behaviour == "initiate" {
         log::info!("Installing app for initiator agent pubkey (Progenitor)");
         custom_install_app_from_bytes(
             ctx,

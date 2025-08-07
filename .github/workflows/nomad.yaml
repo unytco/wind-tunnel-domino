@@ -10,7 +10,8 @@ concurrency:
 jobs:
   run-scenarios:
     name: Run ${{ matrix.job-name || matrix.scenario-name }}
-    runs-on: [self-hosted, wind-tunnel]
+    # runs-on: [self-hosted, wind-tunnel]
+    runs-on: ubuntu-latest
     strategy:
       max-parallel: 1
       fail-fast: false
