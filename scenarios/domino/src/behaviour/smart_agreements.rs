@@ -32,6 +32,18 @@ fn env_number_of_links_processed() -> usize {
 pub fn agent_behaviour(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
+    // check if agent is progenitor
+    if ctx.get().cell_id().agent_pubkey() == &ctx.runner_context().get().progenitor_agent_pubkey() {
+        return crate::behaviour::initiate_network::agent_behaviour(ctx);
+    } else {
+        // else continue with smart agreements behaviour
+        agent_behaviour_smart_agreements(ctx)
+    }
+}
+
+pub fn agent_behaviour_smart_agreements(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> HookResult {
     let reporter = ctx.runner_context().reporter();
     let session_started_at = ctx.get().scenario_values.session_start_time.unwrap();
     let network_initialized = ctx.get().scenario_values.network_initialized;

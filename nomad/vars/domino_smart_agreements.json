@@ -1,12 +1,9 @@
 {
-    "run_id": "domino_smart_agreements",
-    "scenario_name": "domino",
-    "agents_per_node": 5,
-    "scenario_url": "https://github.com/zo-el/temp/releases/download/v0.0.12/domino",
-    "behaviours": [
-      "smart_agreements"
-    ],
-    "single_agent_behaviour": "initiate",
-    "single_agent_count": 1,
-    "duration": 1000
+  "run_id": "custom_domino_smart_agreements",
+  "scenario_name": "domino",
+  "scenario_url": "https://github.com/zo-el/temp/releases/download/v0.0.12/domino",
+  "agents_per_node": 6,
+  "behaviours": ["smart_agreements"],
+
+  "duration": 1000
 }

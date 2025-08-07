@@ -17,7 +17,7 @@ generate_job() {
 BASEDIR="$(dirname "$0")"
 VARS_DIR="$BASEDIR/vars"
 JOBS_DIR="$BASEDIR/jobs"
-TEMPLATE="$BASEDIR/custom_run_scenario.tpl.hcl"
+TEMPLATE="$BASEDIR/run_scenario.tpl.hcl"
 
 mkdir -p "$JOBS_DIR"
 rm -rf "$JOBS_DIR"/*.nomad.hcl || true

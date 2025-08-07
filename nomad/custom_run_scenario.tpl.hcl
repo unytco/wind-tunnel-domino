@@ -61,15 +61,19 @@ variable "min-agents" {
 }
 
 variable "custom-agent-behaviours" {
-  type        = string
-  description = "A custom agent behaviour to run with custom-agent-count agents"
-  default     = {{ index (ds "vars") "custom_agent_behaviours" | default "" | quote }}
+  type        = list(object({
+    behaviour = string
+    count     = number
+  }))
+  description = "A list of custom agent behaviours with their respective agent counts"
+  default     = {{ index (ds "vars") "custom_agent_behaviours" | default (coll.Slice "") | toJSON }}
 }
 
-variable "custom-agent-count" {
+variable "total-agents" {
   type        = number
-  description = "Number of agents for the custom agent behaviour"
-  default     = {{ index (ds "vars") "custom_agent_count" | default 1 }}
+  description = "The number of agents to run per client node that is running the scenario"
+  {{/* Default: read `total_agents` from the JSON data source `vars`, or set to `1` if not provided. */}}
+  default     = {{ index (ds "vars") "total_agents" | default 1 }}
 }
 
 job "{{ (ds "vars").scenario_name }}" {
@@ -84,10 +88,10 @@ job "{{ (ds "vars").scenario_name }}" {
     distinct_property = "${attr.unique.hostname}"
   }
 
-  # Static group for custom agent behaviour
+  # Static group for custom agent behaviours
   dynamic "group" {
-    for_each = var.custom-agent-behaviours != "" ? [var.custom-agent-behaviours] : []
-    labels   = ["${var.scenario-name}-custom-${group.value}"]
+    for_each = var.custom-agent-behaviours
+    labels   = ["${var.scenario-name}-custom-${group.value.behaviour}"]
 
     content {
       task "start_holochain" {
@@ -150,125 +154,9 @@ job "{{ (ds "vars").scenario_name }}" {
             "--connection-string=${var.connection-string}",
             var.duration != null ? "--duration=${var.duration}" : null,
             var.reporter != null ? "--reporter=${var.reporter}" : null,
-            group.value != "" ? "--behaviour=${group.value}:1" : null,
+            group.value.behaviour != "" ? "--behaviour=${group.value.behaviour}:${group.value.count}" : null,
             var.run-id != null ? "--run-id=${var.run-id}" : null,
-            "--agents=${var.custom-agent-count}",  # Different agent count here
-            "--no-progress"
-          ])
-        }
-
-        resources {
-          memory = 2048
-        }
-      }
-
-      dynamic "task" {
-        // Only upload the metrics if `var.reporter` is set to `influx-file`.
-        for_each = var.reporter == "influx-file" ? [var.reporter] : []
-        labels   = ["upload_metrics"]
-
-        content {
-          lifecycle {
-            hook = "poststop"
-          }
-
-          env {
-            TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/runner-telegraf.conf"
-            WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-          }
-
-          template {
-            destination = "${NOMAD_SECRETS_DIR}/secrets.env"
-            env         = true
-            data        = <<EOT
-            INFLUX_TOKEN={{ "{{ with nomadVar \"nomad/jobs\" }}{{ .INFLUX_TOKEN }}{{ end }}" }}
-            EOT
-          }
-
-          driver = "raw_exec"
-
-          artifact {
-            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/runner-telegraf.conf"
-          }
-
-          config {
-            command = "telegraf"
-            args    = ["--once"]
-          }
-        }
-      }
-    }
-  }
-
-  # Dynamic group for remaining behaviours (filtered to exclude custom-agent-behaviours)
-  dynamic "group" {
-    for_each = [for b in var.behaviours : b if b != var.custom-agent-behaviours]
-    labels   = ["${var.scenario-name}-${group.key}-${group.value}"]
-
-    content {
-      task "start_holochain" {
-        lifecycle {
-          hook    = "prestart"
-          sidecar = true
-        }
-
-        env {
-          RUST_LOG = "info"
-        }
-
-        driver = "raw_exec"
-        config {
-          command = "bash"
-          args    = ["-c", "hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://bootstrap.holo.host webrtc wss://sbd.holo.host && echo 1234 | hc s --piped -f 8888 run"]
-        }
-
-        resources {
-          memory = 2048
-        }
-      }
-
-      task "wait_for_holochain" {
-        lifecycle {
-          hook = "prestart"
-        }
-
-        driver = "raw_exec"
-        config {
-          command = "bash"
-          args    = ["-c", "echo -n 'Waiting for Holochain to start'; until hc s call --running=8888 dump-conductor-state 2>/dev/null >/dev/null; do echo '.'; sleep 0.5; done; echo 'done'; sleep 1"]
-        }
-      }
-
-      task "run_scenario" {
-        driver = "raw_exec"
-
-        dynamic "artifact" {
-          // Download the scenario from the URL if it is not a valid local path.
-          for_each = fileexists(abspath(var.scenario-url)) ? [] : [var.scenario-url]
-
-          content {
-            source = var.scenario-url
-          }
-        }
-
-        env {
-          RUST_LOG       = "info"
-          HOME           = "${NOMAD_TASK_DIR}"
-          WT_METRICS_DIR = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
-          MIN_AGENTS     = "${var.min-agents}"
-        }
-
-        config {
-          // If `var.scenario-url` is a valid local path then run that. Otherwise run the scenario downloaded by the `artifact` block.
-          command = fileexists(abspath(var.scenario-url)) ? abspath(var.scenario-url) : var.scenario-name
-          // The `compact` function removes empty strings and `null` items from the list.
-          args = compact([
-            "--connection-string=${var.connection-string}",
-            var.duration != null ? "--duration=${var.duration}" : null,
-            var.reporter != null ? "--reporter=${var.reporter}" : null,
-            group.value != "" ? "--behaviour=${group.value}:1" : null,
-            var.run-id != null ? "--run-id=${var.run-id}" : null,
-            "--agents=${var.agents-per-node}",
+            "--agents=${var.total-agents}",
             "--no-progress"
           ])
         }
