@@ -1,4 +1,4 @@
-use crate::handle_scenario_setup::ScenarioValues;
+use crate::{durable_object::DurableObject, handle_scenario_setup::ScenarioValues};
 use holochain_serialized_bytes::prelude::*;
 use holochain_types::prelude::*;
 use holochain_wind_tunnel_runner::prelude::{self as wind_tunnel_prelude, *};
@@ -156,7 +156,8 @@ impl DominoAgentExt
                 .retain(|agent| agent != &self.get().cell_id().agent_pubkey().clone().into());
             // remove progenitor from the list
             unique_agents.retain(|agent| {
-                agent != &self.runner_context().get().progenitor_agent_pubkey().into()
+                let progenitor_key = DurableObject::new().get_progenitor_key(self);
+                agent != &progenitor_key.unwrap().into()
             });
             self.get_mut().scenario_values.participating_agents = unique_agents
                 .into_iter()

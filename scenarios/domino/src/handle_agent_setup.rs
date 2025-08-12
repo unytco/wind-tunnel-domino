@@ -1,6 +1,8 @@
 use super::handle_scenario_setup::ScenarioValues;
 use crate::domino_agent::DominoAgentExt;
-use holochain_types::prelude::YamlProperties;
+use crate::durable_object::DurableObject;
+use anyhow::Context;
+use holochain_types::prelude::{AgentPubKey, YamlProperties};
 use holochain_wind_tunnel_runner::prelude::*;
 use holochain_wind_tunnel_runner::scenario_happ_bytes;
 use std::collections::HashMap;
@@ -10,18 +12,16 @@ use tokio::time::Instant;
 pub fn agent_setup(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> HookResult {
-    let progenitor_agent_pubkey = ctx.runner_context().get().progenitor_agent_pubkey();
-    let prop = serde_yaml::to_value(serde_json::json!({
-        "progenitor_agent_pubkey": progenitor_agent_pubkey.to_string(),
-    }))?;
-    log::info!("DNA properties: {:?}", prop);
-
-    let dna_properties = HashMap::from([("alliance".to_string(), YamlProperties::new(prop))]);
-
     let assigned_behaviour = ctx.assigned_behaviour().to_string();
     // if ctx.agent_name().contains("agent-0") {
     if assigned_behaviour == "initiate" {
         log::info!("Installing app for initiator agent pubkey (Progenitor)");
+        let progenitor_agent_pubkey = generate_progenitor(ctx)?;
+        let prop = serde_yaml::to_value(serde_json::json!({
+            "progenitor_agent_pubkey": progenitor_agent_pubkey.to_string(),
+        }))?;
+        log::info!("DNA properties: {:?}", prop);
+        let dna_properties = HashMap::from([("alliance".to_string(), YamlProperties::new(prop))]);
         custom_install_app_from_bytes(
             ctx,
             scenario_happ_bytes!("domino"),
@@ -31,6 +31,12 @@ pub fn agent_setup(
         )?;
     } else {
         log::info!("Installing app for participant agent pubkey");
+        let progenitor_agent_pubkey = DurableObject::new().get_progenitor_key(ctx)?;
+        let prop = serde_yaml::to_value(serde_json::json!({
+            "progenitor_agent_pubkey": progenitor_agent_pubkey.to_string(),
+        }))?;
+        log::info!("DNA properties: {:?}", prop);
+        let dna_properties = HashMap::from([("alliance".to_string(), YamlProperties::new(prop))]);
         custom_install_app_from_bytes(
             ctx,
             scenario_happ_bytes!("domino"),
@@ -59,4 +65,50 @@ pub fn agent_setup(
     // and in other cases we should have all agents to transact with
     ctx.get_mut().scenario_values.session_start_time = Some(Instant::now());
     Ok(())
+}
+
+fn generate_progenitor(
+    ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
+) -> Result<AgentPubKey, anyhow::Error> {
+    // Generate a progenitor agent pubkey
+    let admin_ws_url = ctx.runner_context().get_connection_string().to_string();
+    let reporter = ctx.runner_context().reporter();
+    let progenitor_agent_pubkey = ctx
+        .runner_context()
+        .executor()
+        .execute_in_place(async move {
+            log::debug!("Connecting a Holochain admin client: {}", admin_ws_url);
+            let admin_client = AdminWebsocket::connect(admin_ws_url, reporter)
+                .await
+                .context("Unable to connect admin client")?;
+            let agent_pubkey = admin_client
+                .generate_agent_pub_key()
+                .await
+                .map_err(handle_api_err)?;
+            Ok(agent_pubkey)
+        })
+        .context("Failed to set up app port")?;
+    log::info!(
+        "Generated progenitor agent pubkey: {:?}",
+        progenitor_agent_pubkey
+    );
+
+    // Create DurableObject instance and post the progenitor key
+    let durable_object = DurableObject::new();
+
+    // Use a unique run_id - you might want to get this from scenario configuration
+    let run_id = ctx.runner_context().get_run_id().to_string();
+    let progenitor_key_str = progenitor_agent_pubkey.to_string();
+
+    // Post the progenitor key
+    ctx.runner_context()
+        .executor()
+        .execute_in_place(async move {
+            durable_object
+                .post_progenitor_key(&run_id, &progenitor_key_str)
+                .await
+        })
+        .context("Failed to post progenitor key to DurableObject")?;
+
+    Ok(progenitor_agent_pubkey)
 }

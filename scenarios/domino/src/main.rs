@@ -5,6 +5,7 @@ use handle_scenario_setup::ScenarioValues;
 use holochain_wind_tunnel_runner::prelude::*;
 mod domino_agent;
 use domino_agent::DominoAgentExt;
+mod durable_object;
 
 fn main() -> WindTunnelResult<()> {
     log::info!("Starting domino scenario");

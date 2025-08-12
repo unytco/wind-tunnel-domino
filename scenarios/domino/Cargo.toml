@@ -14,6 +14,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }   
 serde_yaml = { workspace = true }
 rmp-serde = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
 
 holochain_types = { workspace = true }
 holochain_serialized_bytes = { workspace = true }

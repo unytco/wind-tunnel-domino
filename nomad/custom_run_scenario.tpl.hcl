@@ -66,7 +66,7 @@ variable "custom-agent-behaviours" {
     count     = number
   }))
   description = "A list of custom agent behaviours with their respective agent counts"
-  default     = {{ index (ds "vars") "custom_agent_behaviours" | default (coll.Slice "") | toJSON }}
+  default     = {{ index (ds "vars") "custom_agent_behaviours" | default (coll.Slice) | toJSON }}
 }
 
 variable "total-agents" {

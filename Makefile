@@ -41,7 +41,7 @@ build:
 nomad_run: prep_jobs deploy_spend
 
 prep_jobs:
-	./nomad/generate_jobs.sh domino_smart_agreements
+	# ./nomad/generate_jobs.sh domino_smart_agreements
 	./nomad/generate_jobs.sh domino_spend
 
 deploy_spend:
