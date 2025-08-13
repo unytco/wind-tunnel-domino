@@ -73,6 +73,10 @@ fn main() -> WindTunnelResult<()> {
         );
         log::info!("uninstalling agent {}", ctx.get().cell_id().agent_pubkey());
         uninstall_app(ctx, None).ok();
+        log::info!(
+            "done tearing down agent {}",
+            ctx.get().cell_id().agent_pubkey()
+        );
         Ok(())
     });
 
