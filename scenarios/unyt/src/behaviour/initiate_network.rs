@@ -47,7 +47,14 @@ pub fn agent_behaviour(
     } else {
         // else just pause since there is nothing else for this agent to do,
         // since the network is initialized
-        thread::sleep(Duration::from_secs(10));
+        let ledger = ctx.unyt_get_ledger()?;
+        log::info!(
+            "Progenitor {} | Ledger: {:?}",
+            ctx.get().cell_id().agent_pubkey(),
+            ledger
+        );
+        log::info!("Network is already initialized, pausing for 10 seconds...");
+        thread::sleep(Duration::from_secs(20));
     }
     Ok(())
 }

@@ -4,6 +4,7 @@ mod handle_scenario_setup;
 use handle_scenario_setup::ScenarioValues;
 use holochain_wind_tunnel_runner::prelude::*;
 mod unyt_agent;
+use rave_engine::types::{Actionable, Completed};
 use unyt_agent::UnytAgentExt;
 mod durable_object;
 
@@ -23,6 +24,7 @@ fn main() -> WindTunnelResult<()> {
     )
     .use_agent_teardown(|ctx| {
         // publish final ledger state
+        log::info!("Tearing down agent {}", ctx.get().cell_id().agent_pubkey());
         let ledger = ctx.unyt_get_ledger()?;
         let reporter = ctx.runner_context().reporter();
         reporter.add_custom(
@@ -31,11 +33,19 @@ fn main() -> WindTunnelResult<()> {
                 .with_field("ledger_fees", ledger.fees.to_string())
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
-        let actuable_tx = ctx.unyt_get_actionable_transactions()?;
-        // log::info!("Actionable transactions: {:?}", actuable_tx);
-        let completed_tx = ctx.unyt_get_completed_transactions()?;
-        let parked_spend = ctx.unyt_get_parked_spend()?;
-        let executed_agreements = ctx.unyt_get_all_my_executed_saveds()?;
+        let actuable_tx = ctx
+            .unyt_get_actionable_transactions()
+            .unwrap_or(Actionable {
+                invoice_actionable: vec![],
+                spend_actionable: vec![],
+            });
+        let completed_tx = ctx.unyt_get_completed_transactions().unwrap_or(Completed {
+            accept: vec![],
+            spend: vec![],
+        });
+
+        let parked_spend = ctx.unyt_get_parked_spend().unwrap_or(vec![]);
+        let executed_agreements = ctx.unyt_get_all_my_executed_saveds().unwrap_or(vec![]);
         reporter.add_custom(
             ReportMetric::new("final:history")
                 .with_field(
@@ -61,6 +71,7 @@ fn main() -> WindTunnelResult<()> {
                 .with_field("executed_agreements", executed_agreements.len() as i64)
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
+        log::info!("uninstalling agent {}", ctx.get().cell_id().agent_pubkey());
         uninstall_app(ctx, None).ok();
         Ok(())
     });
