@@ -1,8 +1,0 @@
-{
-  "run_id": "domino_spend-6",
-  "scenario_name": "domino",
-  "scenario_url": "https://github.com/zo-el/temp/releases/download/v0.0.12/domino",
-  "agents_per_node": 5,
-  "behaviours": ["spend"],
-  "duration": 300
-}

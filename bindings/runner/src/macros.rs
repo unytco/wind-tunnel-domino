@@ -29,10 +29,10 @@ macro_rules! scenario_happ_path {
 
 #[macro_export]
 macro_rules! scenario_happ_bytes {
-    ("domino") => {
-        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../happs/domino/domino.happ"))
+    ("unyt") => {
+        include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/../../happs/unyt/unyt.happ"))
     };
     ($name:literal) => {
-        compile_error!("Only 'domino' is currently supported for embedded happ bytes. Add more patterns to the macro if needed.")
+        compile_error!("Only 'unyt' is currently supported for embedded happ bytes. Add more patterns to the macro if needed.")
     };
 }

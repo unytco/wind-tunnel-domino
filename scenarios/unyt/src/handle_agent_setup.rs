@@ -1,6 +1,6 @@
 use super::handle_scenario_setup::ScenarioValues;
-use crate::domino_agent::DominoAgentExt;
 use crate::durable_object::DurableObject;
+use crate::unyt_agent::UnytAgentExt;
 use anyhow::Context;
 use holochain_types::prelude::{AgentPubKey, YamlProperties};
 use holochain_wind_tunnel_runner::prelude::*;
@@ -24,7 +24,7 @@ pub fn agent_setup(
         let dna_properties = HashMap::from([("alliance".to_string(), YamlProperties::new(prop))]);
         custom_install_app_from_bytes(
             ctx,
-            scenario_happ_bytes!("domino"),
+            scenario_happ_bytes!("unyt"),
             &"alliance".to_string(),
             Some(progenitor_agent_pubkey),
             Some(dna_properties),
@@ -39,7 +39,7 @@ pub fn agent_setup(
         let dna_properties = HashMap::from([("alliance".to_string(), YamlProperties::new(prop))]);
         custom_install_app_from_bytes(
             ctx,
-            scenario_happ_bytes!("domino"),
+            scenario_happ_bytes!("unyt"),
             &"alliance".to_string(),
             None,
             Some(dna_properties),
@@ -47,7 +47,7 @@ pub fn agent_setup(
     }
     try_wait_for_min_agents(ctx, Duration::from_secs(120))?;
 
-    ctx.domino_init()?;
+    ctx.unyt_init()?;
 
     log::info!(
         "Agent setup complete for {}, with agent pub key {:?}, dna hash {:?}",
@@ -57,7 +57,7 @@ pub fn agent_setup(
     );
 
     // Every agent creates a code template to flag that they have joined the network
-    let _ = ctx.domino_create_flag_template()?;
+    let _ = ctx.unyt_create_flag_template()?;
 
     // Note: get all code template and check the author of them as possible agents to transact with
     // I think we should generate the list based on the behaviour of the agent

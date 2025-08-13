@@ -19,11 +19,11 @@ jobs:
       # `required-nodes` defaults to `1` if not provided.
       matrix:
         include:
-          - job-name: domino_spend
-            scenario-name: domino
+          - job-name: unyt_spend
+            scenario-name: unyt
 
-          - job-name: domino_smart_agreements
-            scenario-name: domino
+          - job-name: unyt_smart_agreements
+            scenario-name: unyt
 
     steps:
       - uses: actions/checkout@v4

@@ -1,4 +1,4 @@
-use crate::{domino_agent::DominoAgentExt, handle_scenario_setup::ScenarioValues};
+use crate::{handle_scenario_setup::ScenarioValues, unyt_agent::UnytAgentExt};
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::{
     entries::{
@@ -29,7 +29,7 @@ pub fn agent_behaviour(
         let timestamp = Timestamp::now();
         let days = 30; // if test run longger than this days this will need to be updated
         let expiration_date = (timestamp + Duration::from_secs(days * 24 * 60 * 60))?;
-        ctx.domino_initialize_global_definition(GlobalDefinition {
+        ctx.unyt_initialize_global_definition(GlobalDefinition {
             effective_start_date: timestamp,
             expiration_date,
             system_saved_agreements: SystemSAVEDAgreements {
@@ -37,7 +37,7 @@ pub fn agent_behaviour(
                 compute_transaction_fee: TransactionFeeCompute {
                     agreement: fee_transfer_smart_agreement.into(),
                     fee_trigger: ZFuel::from_str("100").unwrap(),
-                    fee_percentage: 1,
+                    fee_percentage: 0,
                 },
             },
             additional_special_agents: vec![],
@@ -55,7 +55,7 @@ pub fn agent_behaviour(
 fn create_agreements(
     ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
 ) -> Result<(ActionHashB64, ActionHashB64), anyhow::Error> {
-    let credit_limit_hash = ctx.domino_create_code_template(CodeTemplate {
+    let credit_limit_hash = ctx.unyt_create_code_template(CodeTemplate {
         version: semver::Version::new(0, 1, 0),
         title: "__system_credit_limit_computation".to_string(),
         execution_engine: ExecutionEngine::Rhai,
@@ -117,7 +117,7 @@ fn create_agreements(
         tags: vec![],
     })?;
     // creating the smart agreement for credit limit
-    let credit_limit_smart_agreement = ctx.domino_create_smart_agreement(SmartAgreement {
+    let credit_limit_smart_agreement = ctx.unyt_create_smart_agreement(SmartAgreement {
         title: "credit check v0.1.0".to_string(),
         version: semver::Version::new(0, 1, 0),
         code_template_id: credit_limit_hash.into(),
@@ -128,7 +128,7 @@ fn create_agreements(
             },
             DataFetchInstruction {
                 name: "credit_limit".to_string(),
-                instruction: Instruction::Fixed(Value::String("10000".to_string())),
+                instruction: Instruction::Fixed(Value::String("1000000".to_string())),
             },
         ]),
         roles: vec![],
@@ -138,7 +138,7 @@ fn create_agreements(
         tags: vec![],
     })?;
 
-    let fee_transfer_hash = ctx.domino_create_code_template(CodeTemplate {
+    let fee_transfer_hash = ctx.unyt_create_code_template(CodeTemplate {
         version: semver::Version::new(0, 1, 0),
         title: "__system_transaction_fee_collection".to_string(),
         execution_engine: ExecutionEngine::Rhai,
@@ -243,7 +243,7 @@ fn create_agreements(
         ),
         tags: vec![],
     })?;
-    let fee_transfer_smart_agreement = ctx.domino_create_smart_agreement(SmartAgreement {
+    let fee_transfer_smart_agreement = ctx.unyt_create_smart_agreement(SmartAgreement {
         title: "collect fee v0.1".to_string(),
         version: semver::Version::new(0, 1, 0),
         code_template_id: fee_transfer_hash.into(),

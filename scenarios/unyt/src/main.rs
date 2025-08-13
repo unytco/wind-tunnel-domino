@@ -3,12 +3,12 @@ mod handle_agent_setup;
 mod handle_scenario_setup;
 use handle_scenario_setup::ScenarioValues;
 use holochain_wind_tunnel_runner::prelude::*;
-mod domino_agent;
-use domino_agent::DominoAgentExt;
+mod unyt_agent;
+use unyt_agent::UnytAgentExt;
 mod durable_object;
 
 fn main() -> WindTunnelResult<()> {
-    log::info!("Starting domino scenario");
+    log::info!("Starting unyt scenario");
     let builder = ScenarioDefinitionBuilder::<
         HolochainRunnerContext,
         HolochainAgentContext<ScenarioValues>,
@@ -23,7 +23,7 @@ fn main() -> WindTunnelResult<()> {
     )
     .use_agent_teardown(|ctx| {
         // publish final ledger state
-        let ledger = ctx.domino_get_ledger()?;
+        let ledger = ctx.unyt_get_ledger()?;
         let reporter = ctx.runner_context().reporter();
         reporter.add_custom(
             ReportMetric::new("final:ledger_state")
@@ -31,11 +31,11 @@ fn main() -> WindTunnelResult<()> {
                 .with_field("ledger_fees", ledger.fees.to_string())
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
-        let actuable_tx = ctx.domino_get_actionable_transactions()?;
+        let actuable_tx = ctx.unyt_get_actionable_transactions()?;
         // log::info!("Actionable transactions: {:?}", actuable_tx);
-        let completed_tx = ctx.domino_get_completed_transactions()?;
-        let parked_spend = ctx.domino_get_parked_spend()?;
-        let executed_agreements = ctx.domino_get_all_my_executed_saveds()?;
+        let completed_tx = ctx.unyt_get_completed_transactions()?;
+        let parked_spend = ctx.unyt_get_parked_spend()?;
+        let executed_agreements = ctx.unyt_get_all_my_executed_saveds()?;
         reporter.add_custom(
             ReportMetric::new("final:history")
                 .with_field(

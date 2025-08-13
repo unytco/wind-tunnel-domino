@@ -1,5 +1,5 @@
 use crate::{
-    domino_agent::{AcceptTx, DominoAgentExt, SpendInput},
+    unyt_agent::{AcceptTx, UnytAgentExt, SpendInput},
     handle_scenario_setup::ScenarioValues,
 };
 use holochain_wind_tunnel_runner::prelude::*;
@@ -33,7 +33,7 @@ pub fn agent_behaviour(
     let session_started_at = ctx.get().scenario_values.session_start_time.unwrap();
     let network_initialized = ctx.get().scenario_values.network_initialized;
 
-    let ledger = ctx.domino_get_ledger()?;
+    let ledger = ctx.unyt_get_ledger()?;
     log::info!(
         "Agent {} | ledger: {:?}",
         ctx.get().cell_id().agent_pubkey(),
@@ -66,10 +66,10 @@ pub fn agent_behaviour(
 
     // test 2
     // check incoming transactions and accept them so that you can have more to spend
-    let actionable_transactions = ctx.domino_get_actionable_transactions()?;
+    let actionable_transactions = ctx.unyt_get_actionable_transactions()?;
     // accept incoming invoices too?
     for transaction in actionable_transactions.spend_actionable {
-        let _ = ctx.domino_accept_transaction(AcceptTx {
+        let _ = ctx.unyt_accept_transaction(AcceptTx {
             address: transaction.id.clone().into(),
             service_network_definition: None,
         });
@@ -77,10 +77,10 @@ pub fn agent_behaviour(
 
     // test 3
     // get ledger and calculate how much you can spend in this round
-    let ledger = ctx.domino_get_ledger()?;
+    let ledger = ctx.unyt_get_ledger()?;
     let balance = ledger.balance.get_base_unyt();
     let fees = ledger.fees;
-    let credit_limit = ctx.domino_get_my_current_applied_credit_limit()?;
+    let credit_limit = ctx.unyt_get_my_current_applied_credit_limit()?;
     let spendable_amount = ((balance - fees)? + credit_limit)?;
 
     // test 4
@@ -97,7 +97,7 @@ pub fn agent_behaviour(
         let amount_per_agent = (spendable_amount / fraction)?;
         let amount = Units::load(BTreeMap::from([("0".to_string(), amount_per_agent)]));
         for agent in participating_agents {
-            let _ = ctx.domino_create_spend(SpendInput {
+            let _ = ctx.unyt_create_spend(SpendInput {
                 receiver: agent,
                 amount: amount.clone(),
                 note: None,

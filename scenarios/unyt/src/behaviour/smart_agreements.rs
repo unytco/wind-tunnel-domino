@@ -1,5 +1,5 @@
 use crate::{
-    domino_agent::{CreateParkedSpendInput, DominoAgentExt, SAVEDExecuteInputs},
+    unyt_agent::{CreateParkedSpendInput, UnytAgentExt, SAVEDExecuteInputs},
     handle_scenario_setup::ScenarioValues,
 };
 use holochain_wind_tunnel_runner::prelude::*;
@@ -73,9 +73,9 @@ pub fn agent_behaviour(
 
     // test 2: Accepting incoming transactions
     // check incoming SAVED transactions
-    let incoming_transactions = ctx.domino_get_incoming_saveds()?;
+    let incoming_transactions = ctx.unyt_get_incoming_saveds()?;
     for transaction in incoming_transactions {
-        let _ = ctx.domino_collect_from_saved(transaction);
+        let _ = ctx.unyt_collect_from_saved(transaction);
     }
 
     //test 3
@@ -83,7 +83,7 @@ pub fn agent_behaviour(
     // todo: create an env variable to decide how many spends you want to create
     let number_of_links_processed = env_number_of_links_processed();
 
-    let requests = ctx.domino_get_requests_to_execute_agreements()?;
+    let requests = ctx.unyt_get_requests_to_execute_agreements()?;
     for request in requests {
         // select number of links and pass only NUMBER_OF_LINKS_PROCESSED links
         let links = request
@@ -91,7 +91,7 @@ pub fn agent_behaviour(
             .into_iter()
             .take(number_of_links_processed)
             .collect();
-        let _ = ctx.domino_execute_saved(SAVEDExecuteInputs {
+        let _ = ctx.unyt_execute_saved(SAVEDExecuteInputs {
             ea_id: request.ea_id.into(),
             executor_inputs: json!({}),
             links,
@@ -101,10 +101,10 @@ pub fn agent_behaviour(
 
     // test 3
     // get ledger and calculate how much you can spend in this round
-    let ledger = ctx.domino_get_ledger()?;
+    let ledger = ctx.unyt_get_ledger()?;
     let balance = ledger.balance.get_base_unyt();
     let fees = ledger.fees;
-    let credit_limit = ctx.domino_get_my_current_applied_credit_limit()?;
+    let credit_limit = ctx.unyt_get_my_current_applied_credit_limit()?;
     let spendable_amount = ((balance - fees)? + credit_limit)?;
     // from the spend amount lets just use 75 % of it so that we have fees accounted for
     let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
@@ -135,7 +135,7 @@ pub fn agent_behaviour(
             for i in 0..number_of_links_processed {
                 let agent = &participating_agents[i % participating_agents.len()];
                 // create a parked link spending transaction
-                let _ = ctx.domino_create_parked_spend(CreateParkedSpendInput {
+                let _ = ctx.unyt_create_parked_spend(CreateParkedSpendInput {
                     ea_id: smart_agreement_hash.clone().into(),
                     executor: ctx
                         .get()
@@ -188,7 +188,7 @@ fn generate_smart_agreement(
         Some(executor_pubkey) => executor_pubkey.clone(),
         None => return Ok(None),
     };
-    let parked_link_spending_hash = ctx.domino_create_code_template(CodeTemplate {
+    let parked_link_spending_hash = ctx.unyt_create_code_template(CodeTemplate {
         version: semver::Version::new(0, 1, 0),
         title: "parked_link_spending".to_string(),
         execution_engine: ExecutionEngine::Rhai,
@@ -293,7 +293,7 @@ fn generate_smart_agreement(
 
     // creating the smart agreement for credit limit
     let agent_pubkey = ctx.get().cell_id().agent_pubkey().clone();
-    let smart_agreement_hash = ctx.domino_create_smart_agreement(SmartAgreement {
+    let smart_agreement_hash = ctx.unyt_create_smart_agreement(SmartAgreement {
         title: format!("parked_link_spending for client {}", agent_pubkey),
         version: semver::Version::new(0, 1, 0),
         code_template_id: parked_link_spending_hash.into(),

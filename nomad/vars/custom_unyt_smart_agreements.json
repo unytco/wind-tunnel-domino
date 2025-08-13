@@ -1,7 +1,7 @@
 {
-  "run_id": "custom_domino_smart_agreements",
-  "scenario_name": "domino",
-  "scenario_url": "https://github.com/zo-el/temp/releases/download/v0.0.12/domino",
+  "run_id": "custom_unyt_smart_agreements",
+  "scenario_name": "unyt",
+  "scenario_url": "https://github.com/zo-el/temp/releases/download/v0.0.12/unyt",
   "total_agents": 6,
   "custom_agent_behaviours": [
     {

@@ -19,8 +19,8 @@ pub struct ScenarioValues {
 impl UserValuesConstraint for ScenarioValues {}
 
 pub fn setup(ctx: &mut RunnerContext<HolochainRunnerContext>) -> HookResult {
-    log::info!("Setting up domino scenario");
+    log::info!("Setting up unyt scenario");
     configure_app_ws_url(ctx)?;
-    log::info!("Domino scenario setup complete");
+    log::info!("Unyt scenario setup complete");
     Ok(())
 }

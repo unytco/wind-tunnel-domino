@@ -154,7 +154,7 @@ job "{{ (ds "vars").scenario_name }}" {
             "--connection-string=${var.connection-string}",
             var.duration != null ? "--duration=${var.duration}" : null,
             var.reporter != null ? "--reporter=${var.reporter}" : null,
-            group.value.behaviour != "" ? "--behaviour=${group.value.behaviour}:1" : null,
+            group.value.behaviour != "" ? "--behaviour=${group.value.behaviour}:${group.value.agent_count}" : null,
             var.run-id != null ? "--run-id=${var.run-id}" : null,
             "--agents=${group.value.agent_count}",
             "--no-progress"

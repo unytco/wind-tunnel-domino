@@ -30,7 +30,7 @@ members = [
   # "scenarios/write_validated",
   # "scenarios/validation_receipts",
   # "scenarios/kitsune_continuous_flow",
-  "scenarios/domino",
+  "scenarios/unyt",
 
   # "zomes/return_single_value/coordinator",
   # "zomes/crud/coordinator",
