@@ -9,6 +9,7 @@ pub struct ScenarioValues {
     pub participating_agents: Vec<AgentPubKeyB64>,
     pub executor_pubkey: Option<AgentPubKeyB64>,
     pub smart_agreement_hash: Option<ActionHashB64>,
+    pub progenitor_agent_pubkey: Option<AgentPubKeyB64>,
     // pub signal_tx: Option<tokio::sync::broadcast::Sender<Signal>>,
     // pub initiate_with_peers: Vec<AgentPubKey>,
     // pub session_attempts: Arc<AtomicUsize>,

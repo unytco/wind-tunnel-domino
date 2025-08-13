@@ -1,6 +1,6 @@
 use crate::{
-    unyt_agent::{AcceptTx, UnytAgentExt, SpendInput},
     handle_scenario_setup::ScenarioValues,
+    unyt_agent::{AcceptTx, SpendInput, UnytAgentExt},
 };
 use holochain_wind_tunnel_runner::prelude::*;
 use rave_engine::types::Units;
@@ -68,6 +68,13 @@ pub fn agent_behaviour(
     // check incoming transactions and accept them so that you can have more to spend
     let actionable_transactions = ctx.unyt_get_actionable_transactions()?;
     // accept incoming invoices too?
+    if !actionable_transactions.spend_actionable.is_empty() {
+        log::info!(
+            "Agent {} | accepting {} transactions",
+            ctx.get().cell_id().agent_pubkey(),
+            actionable_transactions.spend_actionable.len()
+        );
+    }
     for transaction in actionable_transactions.spend_actionable {
         let _ = ctx.unyt_accept_transaction(AcceptTx {
             address: transaction.id.clone().into(),
@@ -86,6 +93,11 @@ pub fn agent_behaviour(
     // test 4
     // collect agents and start transacting
     if spendable_amount > ZFuel::from_str("0")? {
+        log::info!(
+            "Agent {} | spendable amount: {}",
+            ctx.get().cell_id().agent_pubkey(),
+            spendable_amount
+        );
         ctx.collect_agents()?;
 
         // spend with those agents

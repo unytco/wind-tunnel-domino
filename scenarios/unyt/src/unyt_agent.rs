@@ -148,10 +148,9 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
             unique_agents
                 .retain(|agent| agent != &self.get().cell_id().agent_pubkey().clone().into());
             // remove progenitor from the list
-            unique_agents.retain(|agent| {
-                let progenitor_key = DurableObject::new().get_progenitor_key(self);
-                agent != &progenitor_key.unwrap().into()
-            });
+            if let Ok(progenitor_key) = DurableObject::new().get_progenitor_key(self) {
+                unique_agents.retain(|agent| agent != &progenitor_key.clone().into());
+            }
             self.get_mut().scenario_values.participating_agents = unique_agents
                 .into_iter()
                 .map(|agent| agent.into())

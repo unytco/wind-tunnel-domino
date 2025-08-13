@@ -82,6 +82,9 @@ impl DurableObject {
         &self,
         ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgentContext<ScenarioValues>>,
     ) -> anyhow::Result<AgentPubKey> {
+        if let Some(progenitor_agent_pubkey) = &ctx.get().scenario_values.progenitor_agent_pubkey {
+            return Ok(progenitor_agent_pubkey.clone().into());
+        }
         // Use the same run_id as used in setup_progenitor
         let run_id = ctx.runner_context().get_run_id().to_string();
         let url = format!("{}?run_id={}", self.base_url, run_id);
@@ -129,7 +132,10 @@ impl DurableObject {
         let progenitor_pubkey: AgentPubKey = AgentPubKey::try_from(progenitor_key_str)
             .context("Failed to parse progenitor key from DurableObject")?;
 
-        log::info!("Fetched progenitor agent pubkey: {:?}", progenitor_pubkey);
+        ctx.get_mut().scenario_values.progenitor_agent_pubkey =
+            Some(progenitor_pubkey.clone().into());
+
+        log::debug!("Fetched progenitor agent pubkey: {:?}", progenitor_pubkey);
         Ok(progenitor_pubkey)
     }
 }
