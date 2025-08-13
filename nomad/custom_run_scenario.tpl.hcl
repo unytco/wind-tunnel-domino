@@ -107,7 +107,7 @@ job "{{ (ds "vars").scenario_name }}" {
         driver = "raw_exec"
         config {
           command = "bash"
-          args    = ["-c", "hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://bootstrap.holo.host webrtc wss://sbd.holo.host && echo 1234 | hc s --piped -f 8888 run"]
+          args    = ["-c", "echo '{\"iceServers\":[{\"urls\":[\"stun:stun.cloudflare.com:3478\"]},{\"urls\":[\"stun:stun.l.google.com:19302\"]}]}' > /tmp/webrtc-config.json && hc s clean && echo 1234 | hc s --piped create --in-process-lair network --bootstrap=https://dev-test-bootstrap2.holochain.org/ webrtc wss://dev-test-bootstrap2.holochain.org/ /tmp/webrtc-config.json && echo 1234 | hc s --piped -f 8888 run"]
         }
 
         resources {
