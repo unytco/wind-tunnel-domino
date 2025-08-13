@@ -42,12 +42,12 @@ nomad_run: prep_jobs deploy_spend
 
 prep_jobs:
 	# ./nomad/generate_jobs.sh domino_smart_agreements
-	./nomad/generate_jobs.sh domino_spend
+	./nomad/generate_jobs.sh custom_domino_spend
 
 deploy_spend:
 	@if [ ! -f nomad/token ]; then echo "Error: nomad/token file not found"; exit 1; fi
 	nomad job run -address=https://nomad-server-01.holochain.org:4646 \
 		-token=$$(cat nomad/token) \
 		-ca-cert=./nomad/server-ca-cert.pem \
-		./nomad/jobs/domino_spend.nomad.hcl
+		./nomad/jobs/custom_domino_spend.nomad.hcl
 

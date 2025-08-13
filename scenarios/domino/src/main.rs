@@ -27,7 +27,8 @@ fn main() -> WindTunnelResult<()> {
         let reporter = ctx.runner_context().reporter();
         reporter.add_custom(
             ReportMetric::new("final:ledger_state")
-                .with_field("ledger", format!("{:?}", ledger))
+                .with_field("ledger_balance", ledger.balance.get_base_unyt().to_string())
+                .with_field("ledger_fees", ledger.fees.to_string())
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
         let actuable_tx = ctx.domino_get_actionable_transactions()?;
@@ -39,28 +40,25 @@ fn main() -> WindTunnelResult<()> {
             ReportMetric::new("final:history")
                 .with_field(
                     "actionable_transactions:invoices",
-                    format!("{:?}", actuable_tx.invoice_actionable.len()),
+                    actuable_tx.invoice_actionable.len() as i64,
                 )
                 .with_field(
                     "actionable_transactions:spends",
-                    format!("{:?}", actuable_tx.spend_actionable.len()),
+                    actuable_tx.spend_actionable.len() as i64,
                 )
                 .with_field(
                     "completed_transactions:accepts",
-                    format!("{:?}", completed_tx.accept.len()),
+                    completed_tx.accept.len() as i64,
                 )
                 .with_field(
                     "completed_transactions:spends",
-                    format!("{:?}", completed_tx.spend.len()),
+                    completed_tx.spend.len() as i64,
                 )
                 .with_field(
                     "completed_transactions:parked_spends",
-                    format!("{:?}", parked_spend.len()),
+                    parked_spend.len() as i64,
                 )
-                .with_field(
-                    "executed_agreements",
-                    format!("{:?}", executed_agreements.len()),
-                )
+                .with_field("executed_agreements", executed_agreements.len() as i64)
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
         uninstall_app(ctx, None).ok();

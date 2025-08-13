@@ -32,6 +32,14 @@ pub fn agent_behaviour(
     let reporter = ctx.runner_context().reporter();
     let session_started_at = ctx.get().scenario_values.session_start_time.unwrap();
     let network_initialized = ctx.get().scenario_values.network_initialized;
+
+    let ledger = ctx.domino_get_ledger()?;
+    log::info!(
+        "Agent {} | ledger: {:?}",
+        ctx.get().cell_id().agent_pubkey(),
+        ledger
+    );
+
     // Test 1
     if !network_initialized {
         if ctx.is_network_initialized() {

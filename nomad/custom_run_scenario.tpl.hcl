@@ -63,7 +63,7 @@ variable "min-agents" {
 variable "custom-agent-behaviours" {
   type        = list(object({
     behaviour = string
-    count     = number
+    agent_count     = number
   }))
   description = "A list of custom agent behaviours with their respective agent counts"
   default     = {{ index (ds "vars") "custom_agent_behaviours" | default (coll.Slice) | toJSON }}
@@ -91,7 +91,7 @@ job "{{ (ds "vars").scenario_name }}" {
   # Static group for custom agent behaviours
   dynamic "group" {
     for_each = var.custom-agent-behaviours
-    labels   = ["${var.scenario-name}-custom-${group.value.behaviour}"]
+    labels   = ["${var.scenario-name}-custom-${group.key}-${group.value.behaviour}"]
 
     content {
       task "start_holochain" {
@@ -154,9 +154,9 @@ job "{{ (ds "vars").scenario_name }}" {
             "--connection-string=${var.connection-string}",
             var.duration != null ? "--duration=${var.duration}" : null,
             var.reporter != null ? "--reporter=${var.reporter}" : null,
-            group.value.behaviour != "" ? "--behaviour=${group.value.behaviour}:${group.value.count}" : null,
+            group.value.behaviour != "" ? "--behaviour=${group.value.behaviour}:1" : null,
             var.run-id != null ? "--run-id=${var.run-id}" : null,
-            "--agents=${var.total-agents}",
+            "--agents=${group.value.agent_count}",
             "--no-progress"
           ])
         }
