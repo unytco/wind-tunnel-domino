@@ -28,7 +28,7 @@ fn main() -> WindTunnelResult<()> {
         let ledger = ctx.unyt_get_ledger()?;
         let reporter = ctx.runner_context().reporter();
         reporter.add_custom(
-            ReportMetric::new("final:ledger_state")
+            ReportMetric::new("ledger_state")
                 .with_field("ledger_balance", ledger.balance.get_base_unyt().to_string())
                 .with_field("ledger_fees", ledger.fees.to_string())
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
@@ -47,28 +47,25 @@ fn main() -> WindTunnelResult<()> {
         let parked_spend = ctx.unyt_get_parked_spend().unwrap_or(vec![]);
         let executed_agreements = ctx.unyt_get_all_my_executed_saveds().unwrap_or(vec![]);
         reporter.add_custom(
-            ReportMetric::new("final:history")
-                .with_field(
-                    "actionable_transactions:invoices",
-                    actuable_tx.invoice_actionable.len() as i64,
-                )
-                .with_field(
-                    "actionable_transactions:spends",
-                    actuable_tx.spend_actionable.len() as i64,
-                )
-                .with_field(
-                    "completed_transactions:accepts",
-                    completed_tx.accept.len() as i64,
-                )
-                .with_field(
-                    "completed_transactions:spends",
-                    completed_tx.spend.len() as i64,
-                )
-                .with_field(
-                    "completed_transactions:parked_spends",
-                    parked_spend.len() as i64,
-                )
-                .with_field("executed_agreements", executed_agreements.len() as i64)
+            ReportMetric::new("actionable_transactions")
+                .with_field("invoices", actuable_tx.invoice_actionable.len() as u64)
+                .with_field("spends", actuable_tx.spend_actionable.len() as u64)
+                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
+        );
+        reporter.add_custom(
+            ReportMetric::new("completed_transactions")
+                .with_field("accepts", completed_tx.accept.len() as u64)
+                .with_field("spends", completed_tx.spend.len() as u64)
+                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
+        );
+        reporter.add_custom(
+            ReportMetric::new("parked_spends")
+                .with_field("parked_spends", parked_spend.len() as u64)
+                .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
+        );
+        reporter.add_custom(
+            ReportMetric::new("executed_agreements")
+                .with_field("number", executed_agreements.len() as u64)
                 .with_tag("agent", ctx.get().cell_id().agent_pubkey().to_string()),
         );
         log::info!("uninstalling agent {}", ctx.get().cell_id().agent_pubkey());

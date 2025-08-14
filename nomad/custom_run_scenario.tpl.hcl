@@ -192,7 +192,8 @@ job "{{ (ds "vars").scenario_name }}" {
           driver = "raw_exec"
 
           artifact {
-            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/runner-telegraf.conf"
+            // source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/runner-telegraf.conf"
+            source = "https://raw.githubusercontent.com/unytco/wind-tunnel-unyt/refs/heads/develop/telegraf/runner-telegraf.conf"
           }
 
           config {
