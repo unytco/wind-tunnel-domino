@@ -1,5 +1,5 @@
 {
-  "run_id": "unyt_spend_13",
+  "run_id": "unyt_spend_18",
   "scenario_name": "unyt",
   "scenario_url": "https://github.com/zo-el/temp/releases/download/v0.0.12/unyt",
   "total_agents": 3,
@@ -10,16 +10,16 @@
     },
     {
       "behaviour": "spend",
-      "agent_count": 2
+      "agent_count": 5
     },
     {
       "behaviour": "spend",
-      "agent_count": 2
+      "agent_count": 5
     },
     {
       "behaviour": "spend",
-      "agent_count": 2
+      "agent_count": 5
     }
   ],
-  "duration": 300
+  "duration": 1800
 }
