@@ -1,5 +1,5 @@
 {
-  "run_id": "unyt_sa_1",
+  "run_id": "unyt_sa_2",
   "scenario_name": "unyt",
   "scenario_url": "https://github.com/zo-el/temp/releases/download/v0.0.12/unyt",
   "custom_agent_behaviours": [
@@ -12,5 +12,5 @@
       "agent_count": 5
     }
   ],
-  "duration": 300
+  "duration": 500
 }

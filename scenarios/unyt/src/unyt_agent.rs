@@ -44,11 +44,6 @@ pub struct SAVEDExecuteInputs {
     #[serde(default)]
     pub definition: Option<ActionHash>,
 }
-#[derive(Serialize, Deserialize, Debug, Clone, SerializedBytes)]
-pub struct ExecutionRequests {
-    pub ea_id: ActionHashB64,
-    pub links: Vec<Transaction>,
-}
 
 pub trait UnytAgentExt {
     fn unyt_init(&mut self) -> HookResult;
@@ -91,7 +86,7 @@ pub trait UnytAgentExt {
     ) -> Result<(SAVED, ActionHash), anyhow::Error>;
     fn unyt_get_requests_to_execute_agreements(
         &mut self,
-    ) -> Result<Vec<ExecutionRequests>, anyhow::Error>;
+    ) -> Result<Vec<Transaction>, anyhow::Error>;
     fn unyt_get_parked_spend(&mut self) -> Result<Vec<Transaction>, anyhow::Error>;
     fn unyt_get_all_my_executed_saveds(&mut self) -> Result<Vec<Transaction>, anyhow::Error>;
 }
@@ -269,7 +264,7 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
 
     fn unyt_get_requests_to_execute_agreements(
         &mut self,
-    ) -> Result<Vec<ExecutionRequests>, anyhow::Error> {
+    ) -> Result<Vec<Transaction>, anyhow::Error> {
         self.call_zome_alliance("get_requests_to_execute_agreements", ())
     }
 

@@ -154,7 +154,7 @@ fn create_agreements(
                 let total_amount = 0;
                 let merged_allocations = [];
                         
-                for a in consumed_inputs.allocation {
+                for a in consumed_inputs.spender_allocations {
                     merged_allocations.push(#{
                         "receiver": inputs.receiver.data,
                         "amount": a.data.amount,
@@ -200,7 +200,7 @@ fn create_agreements(
             "consumed_inputs": {
               "type": "object",
               "properties": {
-                "allocation": {
+                "spender_allocations": {
                   "type": "array",
                   "items": {
                     "type": "object",
@@ -256,7 +256,7 @@ fn create_agreements(
         code_template_id: fee_transfer_hash.into(),
         input_rules: InputRules(vec![
             DataFetchInstruction {
-                name: "allocation".to_string(),
+                name: "spender_allocations".to_string(),
                 instruction: Instruction::ProvidedBy(ProvidedBy("spender".to_string())),
             },
             DataFetchInstruction {

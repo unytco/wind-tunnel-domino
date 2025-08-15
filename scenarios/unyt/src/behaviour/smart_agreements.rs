@@ -1,6 +1,6 @@
 use crate::{
-    unyt_agent::{CreateParkedSpendInput, UnytAgentExt, SAVEDExecuteInputs},
     handle_scenario_setup::ScenarioValues,
+    unyt_agent::{CreateParkedSpendInput, SAVEDExecuteInputs, UnytAgentExt},
 };
 use holochain_wind_tunnel_runner::prelude::*;
 use rand::seq::SliceRandom;
@@ -9,7 +9,7 @@ use rave_engine::types::{
         AgreementDefInput, CodeTemplate, DataFetchInstruction, ExecutionEngine, ExecutorRules,
         InputRules, Instruction, RoleQualification, SmartAgreement,
     },
-    ActionHashB64,
+    ActionHashB64, TransactionDetails,
 };
 use rave_engine::types::{
     entries::{EARole, ProvidedBy},
@@ -73,8 +73,10 @@ pub fn agent_behaviour(
 
     // test 2: Accepting incoming transactions
     // check incoming SAVED transactions
+    log::info!("Checking incoming transactions");
     let incoming_transactions = ctx.unyt_get_incoming_saveds()?;
     for transaction in incoming_transactions {
+        log::info!("Collecting incoming transaction: {:?}", transaction);
         let _ = ctx.unyt_collect_from_saved(transaction);
     }
 
@@ -82,21 +84,22 @@ pub fn agent_behaviour(
     // execute any smart agreement that is ready to be executed
     // todo: create an env variable to decide how many spends you want to create
     let number_of_links_processed = env_number_of_links_processed();
-
+    log::info!("Getting requests to execute agreements");
     let requests = ctx.unyt_get_requests_to_execute_agreements()?;
     for request in requests {
         // select number of links and pass only NUMBER_OF_LINKS_PROCESSED links
-        let links = request
-            .links
-            .into_iter()
-            .take(number_of_links_processed)
-            .collect();
-        let _ = ctx.unyt_execute_saved(SAVEDExecuteInputs {
-            ea_id: request.ea_id.into(),
-            executor_inputs: json!({}),
-            links,
-            definition: None,
-        });
+        // Check the
+        if let TransactionDetails::GroupedParked { transactions, .. } = request.details {
+            let links = transactions;
+            let ea_id = request.id;
+            log::info!("Executing saved: {:?}", links);
+            let _ = ctx.unyt_execute_saved(SAVEDExecuteInputs {
+                ea_id: ea_id.into(),
+                executor_inputs: json!({}),
+                links,
+                definition: None,
+            });
+        }
     }
 
     // test 3
@@ -195,7 +198,7 @@ fn generate_smart_agreement(
         execution_code: rmp_serde::encode::to_vec(
             r#"
                 let unyt_allocation = [];
-                for a in consumed_inputs.allocation {
+                for a in consumed_inputs.spender_allocations {
                     unyt_allocation.push(#{
                         "receiver": consumed_inputs.receiver[0].data,
                         "amount": a.data.amount,
@@ -239,7 +242,7 @@ fn generate_smart_agreement(
             "consumed_inputs": {
               "type": "object",
               "properties": {
-                "allocation": {
+                "spender_allocations": {
                   "type": "array",
                   "items": {
                     "type": "object",
@@ -299,7 +302,7 @@ fn generate_smart_agreement(
         code_template_id: parked_link_spending_hash.into(),
         input_rules: InputRules(vec![
             DataFetchInstruction {
-                name: "allocation".to_string(),
+                name: "spender_allocations".to_string(),
                 instruction: Instruction::ProvidedBy(ProvidedBy("spender".to_string())),
             },
             DataFetchInstruction {
