@@ -38,11 +38,15 @@ build-happ:
 build: 
 	cargo build -p unyt
 
-nomad_run: prep_jobs deploy_spend
+nomad_run_spend: prep_jobs_spend deploy_spend
 
-prep_jobs:
-	# ./nomad/generate_jobs.sh unyt_smart_agreements
+nomad_run_smart_agreements: prep_jobs_smart_agreements deploy_smart_agreements
+
+prep_jobs_spend:
 	./nomad/generate_jobs.sh custom_unyt_spend
+
+prep_jobs_smart_agreements:
+	./nomad/generate_jobs.sh custom_unyt_smart_agreements
 
 deploy_spend:
 	@if [ ! -f nomad/token ]; then echo "Error: nomad/token file not found"; exit 1; fi
@@ -51,3 +55,9 @@ deploy_spend:
 		-ca-cert=./nomad/server-ca-cert.pem \
 		./nomad/jobs/custom_unyt_spend.nomad.hcl
 
+deploy_smart_agreements:
+	@if [ ! -f nomad/token ]; then echo "Error: nomad/token file not found"; exit 1; fi
+	nomad job run -address=https://nomad-server-01.holochain.org:4646 \
+		-token=$$(cat nomad/token) \
+		-ca-cert=./nomad/server-ca-cert.pem \
+		./nomad/jobs/custom_unyt_smart_agreements.nomad.hcl
