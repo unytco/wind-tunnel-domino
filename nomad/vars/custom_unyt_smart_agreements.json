@@ -1,16 +1,24 @@
 {
-  "run_id": "unyt_sa_2",
+  "run_id": "unyt_sa_3",
   "scenario_name": "unyt",
   "scenario_url": "https://github.com/zo-el/temp/releases/download/v0.0.12/unyt",
   "custom_agent_behaviours": [
     {
       "behaviour": "initiate",
-      "agent_count": 1
+      "count": 1
     },
     {
       "behaviour": "smart_agreements",
-      "agent_count": 5
+      "count": 10
+    },
+    {
+      "behaviour": "smart_agreements",
+      "count": 10
+    },
+    {
+      "behaviour": "smart_agreements",
+      "count": 10
     }
   ],
-  "duration": 500
+  "duration": 1000
 }
