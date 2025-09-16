@@ -34,6 +34,13 @@
         cargoExtraArgs = "--features chc,unstable-functions,unstable-countersigning";
         # Override arguments passed in to Holochain build with above feature arguments.
         customHolochain = inputs'.holonix.packages.holochain.override { inherit cargoExtraArgs; };
+
+        lp-tool = pkgs.buildGoModule {
+          pname = "lp-tool";
+          version = "0.1.0";
+          src = ./lp-tool;
+          vendorHash = "sha256-7IGJGP2K0H0eKYU+gveykhGYt9ZufJNBUEv3jM66Wt0=";
+        };
       in
       {
         imports = [
@@ -69,6 +76,11 @@
           in
           {
             default = pkgs.mkShell {
+              buildInputs = [
+                pkgs.go
+                lp-tool
+              ];
+
               packages = commonPackages ++ [
                 pkgs.influxdb2-cli
                 pkgs.influxdb2-server
@@ -95,7 +107,9 @@
             };
 
             ci = pkgs.mkShell {
-              packages = commonPackages;
+              packages = commonPackages ++ [
+                pkgs.go
+              ];
             };
 
             kitsune = pkgs.mkShell {
@@ -111,10 +125,27 @@
         packages = {
           default = config.workspace.workspace;
           inherit (config.workspace) workspace;
-          ci-telegraf = pkgs.writeShellApplication {
-            name = "ci-telegraf";
-            runtimeInputs = [ pkgs.telegraf ];
-            text = "telegraf --config telegraf/runner-telegraf.conf --once > >(tee logs/telegraf-stdout.log) 2> >(tee logs/telegraf-stderr.log >&2)";
+          inherit lp-tool;
+          local-upload-metrics = pkgs.writeShellApplication {
+            name = "local-upload-metrics";
+            runtimeInputs = [
+              lp-tool
+              pkgs.gnused
+              pkgs.influxdb2-cli
+              pkgs.jq
+              pkgs.yq
+            ];
+            text = ''
+              set -euo pipefail
+
+              # shellcheck disable=SC1091
+              source ./scripts/influx.sh
+              
+              use_influx
+              import_lp_metrics
+
+              rm -f ./telegraf/metrics/*.influx 2>/dev/null || true
+            '';
           };
         };
 

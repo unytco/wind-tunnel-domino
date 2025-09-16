@@ -144,6 +144,7 @@ job "{{ (ds "vars").scenario_name }}" {
           HOME           = "${NOMAD_TASK_DIR}"
           WT_METRICS_DIR = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
           MIN_AGENTS     = "${var.min-agents}"
+          RUN_SUMMARY_PATH  = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
         }
 
         config {
@@ -177,8 +178,11 @@ job "{{ (ds "vars").scenario_name }}" {
           }
 
           env {
-            TELEGRAF_CONFIG_PATH = "${NOMAD_TASK_DIR}/runner-telegraf.conf"
             WT_METRICS_DIR       = "${NOMAD_ALLOC_DIR}/data/telegraf/metrics"
+            RUN_ID               = "${var.run-id != null ? var.run-id : ""}"
+            RUN_SUMMARY_PATH     = "${NOMAD_ALLOC_DIR}/run_summary.jsonl"
+            INFLUX_HOST          = "https://ifdb.holochain.org"
+            INFLUX_BUCKET        = "windtunnel"
           }
 
           template {
@@ -192,13 +196,12 @@ job "{{ (ds "vars").scenario_name }}" {
           driver = "raw_exec"
 
           artifact {
-            // source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/telegraf/runner-telegraf.conf"
-            source = "https://raw.githubusercontent.com/unytco/wind-tunnel-unyt/refs/heads/develop/telegraf/runner-telegraf.conf"
+            source = "https://raw.githubusercontent.com/holochain/wind-tunnel/refs/heads/main/nomad/upload_metrics.sh"
           }
 
           config {
-            command = "telegraf"
-            args    = ["--once"]
+            command = "bash"
+            args    = ["${NOMAD_TASK_DIR}/upload_metrics.sh"]
           }
         }
       }

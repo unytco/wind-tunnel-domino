@@ -317,10 +317,10 @@ fn agent_behaviour(ctx: &mut AgentContext<HolochainRunnerContext, HolochainAgent
 
 The metric will appear in InfluxDB as `wt.custom.my_custom_metric` with a field `value` set to `1`.
 
-### Running scenarios locally
+### Running scenarios locally with Nix
 
-When developing your scenarios you can disable anything that requires running infrastructure, other than the target system. However, once you
-are ready to run your scenario to get results you will need a few extra steps.
+When developing your scenarios, you can disable anything that requires running infrastructure, other than the target system. However, once you
+are ready to run your scenario to get results, you will need a few extra steps.
 
 #### Running InfluxDB
 
@@ -343,11 +343,21 @@ so you can now run your scenario and the metrics will be pushed to InfluxDB.
 
 #### Running Telegraf
 
-This is used for pushing system metrics to InfluxDB. This is not required locally but if you would like to run it then you can do so from inside the Nix shell:
+Telegraf is used for collecting host metrics and writing them to disk. This is not required locally, but if you would like to run it, then you can do so from inside the Nix shell.
+Currently, `telegraf` is configured to collect the following metrics:
 
-```bash
-use_influx
-start_telegraf
+- CPU stats
+- Disk stats and usage
+- Kernel Info
+- Memory and Swap stats
+- Network stats
+- Processes
+- System stats
+
+To run the `telegraf` agent to collect host metrics while running scenarios enter the Nix shell and run
+
+```sh
+start_host_metrics_telegraf
 ```
 
 #### Running Holochain
@@ -360,6 +370,13 @@ hc s clean && echo "1234" | hc s --piped create && echo "1234" | RUST_LOG=warn h
 
 For more advanced scenarios or for distributed tests, this is not appropriate!
 
+
+To run Holochain with metrics enabled, the `HOLOCHAIN_INFLUXIVE_FILE` environment variable must be set beforehand to a valid path within `WT_METRICS_DIR` (set by the Nix shell).
+For example:
+```bash
+export HOLOCHAIN_INFLUXIVE_FILE=$WT_METRICS_DIR/holochain.influx
+```
+
 #### Running scenarios
 
 Each scenario is expected to provide a README.md with at least:
@@ -369,9 +386,29 @@ Each scenario is expected to provide a README.md with at least:
 
 For example, see the [zome_call_single_value](https://github.com/holochain/wind-tunnel/blob/main/scenarios/zome_call_single_value/README.md) scenario.
 
-As well as the command you use to run the scenario, you will need to select an appropriate reporter. Try running the scenario with the `--help` flag to see the available options.
-For local development, the default `in-memory` reporter will do. If you have influx running then you can use the `influx-client` option. If you have both Influx and Telegraf running
-then you can use the `influx-file` option.
+As well as the command you use to run the scenario, you will need to select an appropriate reporter. Run the scenario with the `--help` flag to see the available options.
+For local development, the default `in-memory` reporter will do.
+If you have influx running and only want scenario metrics, then you can use the `influx-client` option.
+If you have set up Holochain or host metrics then you can use the `influx-file` option and then import all metrics in the next step.
+
+#### Importing Metrics
+
+Once you've finished running a scenario, you can collect host, Holochain and scenario metrics with:
+
+```sh
+nix run .#local-upload-metrics
+```
+
+At this point the metrics will be uploaded to InfluxDB, and you will be able to view the metrics in the InfluxDB dashboards by `run_id`.
+
+Running this Nix command will also clean up the current metrics from disk, so you are immediately ready to run the next scenario.
+
+> [!Warning]
+> The metrics must be imported after each scenario run since they are associated only with the latest scenario run.
+> [!Warning]
+> If Holochain ran with metrics enabled, it must be restarted after each scenario run since its output file is deleted after importing.
+> [!Warning]
+> If host metrics were enabled with Telegraf, it must be restarted after each scenario run since its output file is deleted after importing.
 
 ### Developer guide (for wind-tunnel)
 
@@ -420,6 +457,14 @@ nomad agent -dev
 ```
 
 Now navigate to <http://localhost:4646/ui> to view the Nomad dashboard.
+
+Next, in a new terminal window, generate the nomad jobs for each scenario with:
+
+```bash
+nix develop --command ./nomad/generate_jobs.sh
+```
+
+The generated jobs will be in the `nomad/jobs` directory.
 
 Next, in a new terminal window, build the scenario you want to run with:
 
@@ -530,7 +575,7 @@ You can also override existing and omitted variables with the `-var` flag. For e
 (in seconds) or to set the reporter to print to `stdout`.
 
 ```bash
-nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http:://{some-url} -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
+nomad job run -var-file=nomad/var_files/app_install_minimal.vars -var scenario-url=http://{some-url} -var reporter=in-memory -var duration=300 nomad/run_scenario.nomad.hcl
 ```
 
 > [!Note]

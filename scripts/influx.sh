@@ -34,6 +34,66 @@ configure_influx() {
 
 # Remove data and config
 clear_influx() {
-     http "http://localhost:8087/debug/flush"
-     rm "$INFLUX_CONFIGS_PATH"
+    http "http://localhost:8087/debug/flush"
+    rm "$INFLUX_CONFIGS_PATH"
+}
+
+# Adds a run_id tag all metrics in $WT_METRICS_DIR and imports them into InfluxDB
+import_lp_metrics() {
+    if [ -z "${INFLUX_TOKEN:-}" ]; then
+        echo "Environment variable INFLUX_TOKEN has not been set. Run 'use_influx' to set it." >&2
+        return 1
+    fi
+
+    local influx_url
+    influx_url="${1:-$INFLUX_HOST}"
+    local influx_bucket
+    influx_bucket="${INFLUX_BUCKET:-windtunnel}"
+
+    local wt_metrics_dir
+    wt_metrics_dir="${WT_METRICS_DIR:-"$(pwd)/telegraf/metrics"}"
+
+    local summary_path
+    summary_path=${RUN_SUMMARY_PATH:-"run_summary.jsonl"}
+
+    set -euo pipefail
+
+    # Get run-id from the latest run summary or set it to ""
+    local run_id
+    if [ -f "$summary_path" ]; then
+        run_id=$(jq --slurp --raw-output 'sort_by(.started_at|tonumber) | last | .run_id' < "$summary_path")
+    else
+        run_id=""
+    fi
+
+    if [ -z "${run_id}" ]; then
+        echo "No run_id found, using empty run_id"
+    else
+        echo "Metrics will be imported with tag: run_id=$run_id"
+    fi
+
+    # for each metric file, import to influx
+    local tmp_output_file
+    local output_file
+    for metric_file in "$wt_metrics_dir"/*.influx; do
+        echo "Importing $metric_file"
+        output_file="$metric_file"
+        # reset tmp_output_file to prevent accidental reuse and double deletion
+        tmp_output_file=""
+        # Tag metrics with run_id, if set
+        if [[ "${run_id:+x}" == "x" ]]; then
+            tmp_output_file="$(mktemp)"
+            lp-tool -input "$metric_file" -output "$tmp_output_file" -tag run_id="$run_id"
+            output_file="$tmp_output_file"
+        fi
+        # import metrics to influx
+        influx write \
+            --host "$influx_url" \
+            --bucket "$influx_bucket" \
+            --org "holo" \
+            --file "$output_file"
+        # remove temp file
+        [[ "${tmp_output_file:+x}" == "x" ]] && rm -f "$tmp_output_file"
+        echo "Finished importing $metric_file"
+    done
 }
