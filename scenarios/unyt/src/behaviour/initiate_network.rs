@@ -69,11 +69,10 @@ fn create_agreements(
         execution_code: rmp_serde::encode::to_vec(
             r#"
                 return  #{
-                    "credit_limit":  #{
-                        "agent": inputs.claiming_agent_pubkey.data,
-                        "amount": inputs.credit_limit.data
+                    "output": #{
+                        "credit_limit":  inputs.credit_limit.data
                     }
-                };
+                };  
         "#,
         )
         .unwrap(),
@@ -98,8 +97,7 @@ fn create_agreements(
             "inputs": {
               "type": "object",
               "properties": {
-                "claiming_agent_pubkey": { "type": "string" },
-                "credit_limit": { "type": "string" }
+                "credit_limit": { "type": "object", "additionalProperties": { "type": "string" } }
               }
             }
           },
@@ -111,37 +109,30 @@ fn create_agreements(
           "properties": {
             "credit_limit": {
               "type": "object",
-              "properties": {
-                "agent": { "type": "string" },
-                "amount": { "type": "string" }
-              },
-              "required": ["agent", "amount"]
+              "additionalProperties": { "type": "string" }
             }
           },
           "required": ["credit_limit"]
         }
         ),
+        one_time_run: false,
+        aggregate_execution: false,
         tags: vec![],
     })?;
     // creating the smart agreement for credit limit
     let credit_limit_smart_agreement = ctx.unyt_create_smart_agreement(SmartAgreement {
-        title: "credit check v0.1.0".to_string(),
+        title: "credit check".to_string(),
         version: semver::Version::new(0, 1, 0),
         code_template_id: credit_limit_hash.into(),
-        input_rules: InputRules(vec![
-            DataFetchInstruction {
-                name: "claiming_agent_pubkey".to_string(),
-                instruction: Instruction::ExecutorProvided,
-            },
-            DataFetchInstruction {
-                name: "credit_limit".to_string(),
-                instruction: Instruction::Fixed(Value::String("1000000".to_string())),
-            },
-        ]),
+        input_rules: InputRules(vec![DataFetchInstruction {
+            name: "credit_limit".to_string(),
+            instruction: Instruction::Fixed(json!({
+              "0": "1000000",
+              "1": "1000000"
+            })),
+        }]),
         roles: vec![],
         executor_rules: ExecutorRules::Any,
-        one_time_run: false,
-        aggregate_execution: false,
         tags: vec![],
     })?;
 
@@ -248,6 +239,8 @@ fn create_agreements(
           "required": ["unyt_allocation", "computed_values"]
         }
         ),
+        one_time_run: false,
+        aggregate_execution: true,
         tags: vec![],
     })?;
     let fee_transfer_smart_agreement = ctx.unyt_create_smart_agreement(SmartAgreement {
@@ -273,8 +266,6 @@ fn create_agreements(
         executor_rules: ExecutorRules::AuthorizedExecutor(
             ctx.get().cell_id().agent_pubkey().clone().into(),
         ),
-        one_time_run: false,
-        aggregate_execution: true,
         tags: vec![],
     })?;
     Ok((credit_limit_smart_agreement, fee_transfer_smart_agreement))

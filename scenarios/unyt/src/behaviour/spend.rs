@@ -3,7 +3,7 @@ use crate::{
     unyt_agent::{AcceptTx, SpendInput, UnytAgentExt},
 };
 use holochain_wind_tunnel_runner::prelude::*;
-use rave_engine::types::Units;
+use rave_engine::types::UnitMap;
 use std::{collections::BTreeMap, str::FromStr, thread, time::Duration};
 use zfuel::{fraction::Fraction, fuel::ZFuel};
 
@@ -88,7 +88,7 @@ pub fn agent_behaviour(
     let balance = ledger.balance.get_base_unyt();
     let fees = ledger.fees;
     let credit_limit = ctx.unyt_get_my_current_applied_credit_limit()?;
-    let spendable_amount = ((balance - fees)? + credit_limit)?;
+    let spendable_amount = ((balance - fees)? + credit_limit.get_base_unyt())?;
 
     // test 4
     // collect agents and start transacting
@@ -107,7 +107,7 @@ pub fn agent_behaviour(
         let fraction = Fraction::new(participating_agents.len() as i64, 1)?;
         // split the spendable_amount into equal amounts for participating agents
         let amount_per_agent = (spendable_amount / fraction)?;
-        let amount = Units::load(BTreeMap::from([("0".to_string(), amount_per_agent)]));
+        let amount = UnitMap::load(BTreeMap::from([("0".to_string(), amount_per_agent)]));
         for agent in participating_agents {
             let _ = ctx.unyt_create_spend(SpendInput {
                 receiver: agent,

@@ -13,7 +13,7 @@ use rave_engine::types::{
 };
 use rave_engine::types::{
     entries::{EARole, ProvidedBy},
-    Units,
+    UnitMap,
 };
 use serde_json::json;
 use std::{collections::BTreeMap, str::FromStr, thread, time::Duration};
@@ -108,7 +108,7 @@ pub fn agent_behaviour(
     let balance = ledger.balance.get_base_unyt();
     let fees = ledger.fees;
     let credit_limit = ctx.unyt_get_my_current_applied_credit_limit()?;
-    let spendable_amount = ((balance - fees)? + credit_limit)?;
+    let spendable_amount = ((balance - fees)? + credit_limit.get_base_unyt())?;
     // from the spend amount lets just use 75 % of it so that we have fees accounted for
     let spendable_amount = (spendable_amount * Fraction::new(75, 100)?)?;
 
@@ -133,7 +133,7 @@ pub fn agent_behaviour(
             let amount_per_agent = (spendable_amount / fraction)?;
             // expect 1% fees to be paid
             let amount_per_agent = (amount_per_agent * Fraction::new(98, 100)?)?;
-            let amount = Units::load(BTreeMap::from([("0".to_string(), amount_per_agent)]));
+            let amount = UnitMap::load(BTreeMap::from([("0".to_string(), amount_per_agent)]));
 
             for i in 0..number_of_links_processed {
                 let agent = &participating_agents[i % participating_agents.len()];
@@ -291,6 +291,8 @@ fn generate_smart_agreement(
           "required": ["unyt_allocation", "computed_values"]
         }
         ),
+        one_time_run: false,
+        aggregate_execution: true,
         tags: vec![],
     })?;
 
@@ -321,8 +323,6 @@ fn generate_smart_agreement(
             qualification: RoleQualification::Authorized(vec![agent_pubkey.clone().into()]),
         }],
         executor_rules: ExecutorRules::AuthorizedExecutor(executor_pubkey.clone().into()),
-        one_time_run: false,
-        aggregate_execution: true,
         tags: vec![],
     })?;
     ctx.get_mut().scenario_values.executor_pubkey = Some(executor_pubkey.clone());

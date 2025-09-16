@@ -7,7 +7,7 @@ use rave_engine::types::{
         code_template::CodeTemplate, AgreementDefInput, CodeTemplateExt, ExecutionEngine,
         GlobalDefinition, GlobalDefinitionExt, SmartAgreement, SmartAgreementExt, SAVED,
     },
-    Actionable, Completed, Ledger, Transaction, Units,
+    Actionable, Completed, Ledger, Transaction, UnitMap,
 };
 use serde_json::Value;
 use zfuel::fuel::ZFuel;
@@ -16,7 +16,7 @@ use zfuel::fuel::ZFuel;
 #[derive(Serialize, Deserialize, Debug, SerializedBytes)]
 pub struct SpendInput {
     pub receiver: AgentPubKeyB64,
-    pub amount: Units,
+    pub amount: UnitMap,
     pub note: Option<String>,
     pub service_network_definition: Option<ActionHash>,
 }
@@ -30,7 +30,7 @@ pub struct AcceptTx {
 pub struct CreateParkedSpendInput {
     pub ea_id: ActionHash,
     pub executor: AgentPubKey,
-    pub amount: Units,
+    pub amount: UnitMap,
     pub spender_payload: Value,
     pub service_network_definition: Option<ActionHash>,
 }
@@ -72,7 +72,7 @@ pub trait UnytAgentExt {
     fn unyt_get_actionable_transactions(&mut self) -> Result<Actionable, anyhow::Error>;
     fn unyt_accept_transaction(&mut self, tx: AcceptTx) -> Result<Transaction, anyhow::Error>;
     fn unyt_get_ledger(&mut self) -> Result<Ledger, anyhow::Error>;
-    fn unyt_get_my_current_applied_credit_limit(&mut self) -> Result<ZFuel, anyhow::Error>;
+    fn unyt_get_my_current_applied_credit_limit(&mut self) -> Result<UnitMap, anyhow::Error>;
     fn unyt_get_completed_transactions(&mut self) -> Result<Completed, anyhow::Error>;
     fn unyt_get_incoming_saveds(&mut self) -> Result<Vec<Transaction>, anyhow::Error>;
     fn unyt_collect_from_saved(&mut self, tx: Transaction) -> Result<Transaction, anyhow::Error>;
@@ -176,6 +176,8 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
               "properties": { },
               "required": []
             }),
+            aggregate_execution: false,
+            one_time_run: false,
             tags: vec![],
         };
         self.call_zome_alliance("create_code_template", code_template)
@@ -232,7 +234,7 @@ impl UnytAgentExt for AgentContext<HolochainRunnerContext, HolochainAgentContext
         self.call_zome_alliance("get_ledger", ())
     }
 
-    fn unyt_get_my_current_applied_credit_limit(&mut self) -> Result<ZFuel, anyhow::Error> {
+    fn unyt_get_my_current_applied_credit_limit(&mut self) -> Result<UnitMap, anyhow::Error> {
         self.call_zome_alliance("get_my_current_applied_credit_limit", ())
     }
 
